@@ -96,7 +96,6 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
         topological_orders[a] = i;
         i--;
     }
-    checkCycle(topological_orders);
 
     std::priority_queue<pair<int, int>> to_replan; // <position in ordered_agents, agent id>
     vector<bool> lookup_table(num_of_agents, false);
@@ -217,7 +216,6 @@ bool PBS::findPathForSingleAgent(PBSNode& node, const set<int>& higher_agents, i
 {
     steady_clock::time_point t = steady_clock::now();
     new_path = search_engines[a]->findOptimalPath(higher_agents, paths, a);  //TODO: add runtime check to the low level
-    num_LL_search_calls ++;
     num_LL_expanded += search_engines[a]->num_expanded;
     num_LL_generated += search_engines[a]->num_generated;
     runtime_build_CT += search_engines[a]->runtime_build_CT;
@@ -225,12 +223,13 @@ bool PBS::findPathForSingleAgent(PBSNode& node, const set<int>& higher_agents, i
     runtime_path_finding += getDuration(t, steady_clock::now());
     if (new_path.empty())
         return false;
-    if (isSamePath(*paths[a], new_path))
-    {
-        cout << "The path is the same" << endl;
-        printPath(new_path);
-    }
-    assert(paths[a] != nullptr and !isSamePath(*paths[a], new_path));
+    // if (isSamePath(*paths[a], new_path))
+    // {
+    //     cout << "The path is the same" << endl;
+    //     printPath(new_path);
+    //     exit(1);
+    // }
+    // assert(paths[a] != nullptr and !isSamePath(*paths[a], new_path));
     node.cost += (int)new_path.size() - (int)paths[a]->size();
     if (node.makespan >= paths[a]->size())
     {
@@ -329,6 +328,7 @@ int PBS::getSumOfCosts() const
        cost += (int)path->size() - 1;
    return cost;
 }
+
 void PBS::pushNodes(PBSNode* n1, PBSNode* n2)
 {
     if (n1 != nullptr and n2 != nullptr)
@@ -448,10 +448,14 @@ void PBS::saveResults(const string &fileName, const string &instanceName) const
     double out_runtime_implicit_constraints = (double)runtime_implicit_constraints / CLOCKS_PER_SEC;
     double out_runtime_run_mvc = (double)runtime_run_mvc / CLOCKS_PER_SEC;
 
+    uint64_t out_search_calls = 0;
+    for (int i = 0; i < num_of_agents; i++)
+        out_search_calls += search_engines[i]->num_of_calls;
+
 	ofstream stats(fileName, std::ios::app);
 	stats << out_runtime << "," << num_HL_expanded << "," << num_HL_generated << "," <<
         num_LL_expanded << "," << num_LL_generated << "," << num_backtrack << "," << 
-        num_LL_search_calls << "," << num_restart << "," <<
+        out_search_calls << "," << num_restart << "," <<
         solution_cost << "," << dummy_start->cost << "," <<
 		out_runtime_detect_conflicts << "," << out_runtime_build_CT << "," << 
         out_runtime_build_CAT << "," << out_runtime_path_finding << "," << 
@@ -559,12 +563,10 @@ void PBS::printConflicts(const PBSNode &curr, int num)
 	}
 }
 
-
 string PBS::getSolverName() const
 {
 	return "PBS with " + search_engines[0]->getName();
 }
-
 
 bool PBS::terminate(PBSNode* curr)
 {
@@ -594,7 +596,6 @@ bool PBS::terminate(PBSNode* curr)
 	}
 	return false;
 }
-
 
 bool PBS::generateRoot()
 {

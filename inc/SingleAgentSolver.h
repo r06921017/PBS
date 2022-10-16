@@ -84,6 +84,7 @@ class SingleAgentSolver
 public:
 	uint64_t num_expanded = 0;
 	uint64_t num_generated = 0;
+	uint64_t num_of_calls = 0;
 
 	clock_t runtime_build_CT = 0; // runtimr of building constraint table
 	clock_t runtime_build_CAT = 0; // runtime of building conflict avoidance table

@@ -22,6 +22,7 @@ Path SpaceTimeAStar::findOptimalPath(const set<int>& higher_agents, const vector
     Path path;
     num_expanded = 0;
     num_generated = 0;
+    num_of_calls ++;
 
     // build constraint table
     steady_clock::time_point t = steady_clock::now();
@@ -140,6 +141,7 @@ Path SpaceTimeAStar::findOptimalPath(const ConstraintTable& constraint_table)
     Path path;
     num_expanded = 0;
     num_generated = 0;
+    num_of_calls ++;
 
     // the earliest timestep that the agent can hold its goal location. The length_min is considered here.
     auto holding_time = constraint_table.getHoldingTime(goal_location, constraint_table.length_min);

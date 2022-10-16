@@ -26,6 +26,7 @@ void SIPP::updatePath(const LLNode* goal, vector<PathEntry> &path)
 Path SIPP::findOptimalPath(const set<int>& higher_agents, const vector<Path*>& paths, int agent)
 {
     reset();
+    num_of_calls ++;
 
     // build constraint table
     steady_clock::time_point t = steady_clock::now();
@@ -127,6 +128,7 @@ Path SIPP::findOptimalPath(const set<int>& higher_agents, const vector<Path*>& p
 Path SIPP::findOptimalPath(const ConstraintTable& constraint_table)
 {
     reset();
+    num_of_calls ++;
 
     auto t = clock();
 

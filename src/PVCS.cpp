@@ -31,9 +31,9 @@ bool PVCS::solve(clock_t time_limit)
                 if (screen > 1)
                     cout << "	Expand " << *curr << endl;
 
-                clock_t t1 = clock();
+                steady_clock::time_point t1 = steady_clock::now();
                 generateChild(0, curr);
-                runtime_generate_child += (double)(clock() - t1) / CLOCKS_PER_SEC;
+                runtime_generate_child += getDuration(t1, steady_clock::now());
 
                 if (curr->children[0] != nullptr)
                 {
@@ -41,11 +41,14 @@ bool PVCS::solve(clock_t time_limit)
                 }
                 else  // For now, we just restart if there is no solution
                 {
+                    if (screen > 1)
+                        cout << "\tChild of node " << curr->time_generated << " failed" << endl;
                     clear();
                     stack<PBSNode*>().swap(open_list);  // clear the open_list
                     num_restart ++;
                     break;  // leave the while loop of open_list.empty
                 }
+                curr->clear();
             }
         }  // end of while loop
     }
@@ -78,7 +81,7 @@ bool PVCS::generateRoot()
         root->makespan = max(root->makespan, new_path.size() - 1);
         root->cost += (int)new_path.size() - 1;
     }
-    clock_t t = clock();
+    steady_clock::time_point t = steady_clock::now();
 	root->depth = 0;
     for (int a1 = 0; a1 < num_of_agents; a1++)
     {
@@ -97,34 +100,28 @@ bool PVCS::generateRoot()
                         root->conflicts.emplace_back(new Conflict(a2, a1, priority));
                 }
             }
-            else if (PBS::hasConflicts(a1, a2))  // not using target reasoning
+            else if (hasConflicts(a1, a2))  // not using target reasoning
             {
                 root->conflicts.emplace_back(new Conflict(a1, a2));
             }
         }
     }
-    runtime_detect_conflicts += (double)(clock() - t) / CLOCKS_PER_SEC;
+    runtime_detect_conflicts += getDuration(t, steady_clock::now());
     num_HL_generated++;
     root->time_generated = num_HL_generated;
     if (screen > 1)
-        cout << "Generate " << *root << endl;
+        cout << "Generate root " << *root << endl;
 	pushNode(root);
 	dummy_start = root;
-	if (screen >= 2) // print start and goals
+	if (screen > 1) // print start and goals
 		printPaths();
 
 	return true;
 }
 
-bool PVCS::generateChild(int child_id, PBSNode* parent)
+bool PVCS::runWMVC(PBSNode* node)
 {
-    assert(child_id == 0 or child_id == 1);
-    parent->children[child_id] = new PBSNode(*parent);
-    PBSNode* node = parent->children[child_id];
-    node->ag_weights.assign(num_of_agents, 1);
-
-    // Start MVC
-    clock_t mvc_start = clock();
+    steady_clock::time_point mvc_start = steady_clock::now();  // Start MVC
     IloEnv env = IloEnv();  // Initialize the environment for CPLEX
     IloNumVarArray var(env); // variable for each agent
     IloRangeArray con(env);  // Numerical constraints for each agent
@@ -133,6 +130,7 @@ bool PVCS::generateChild(int child_id, PBSNode* parent)
 
     vector<int> mvc_agents(num_of_agents, -1);  // map the agent id to var id in mvc problem
     vector<bool> need_replan_agents(num_of_agents, false);
+    vector<bool> at_goal_agents(num_of_agents, false);
     uint64_t counter = 0;
 
     #ifndef NDEBUG
@@ -140,7 +138,7 @@ bool PVCS::generateChild(int child_id, PBSNode* parent)
         cout << "---------- Current conflicts ----------" << endl;
     #endif
     // Declare the range of variables and the objective function
-    for (const auto& conf : boost::adaptors::reverse(parent->conflicts))
+    for (const auto& conf : boost::adaptors::reverse(node->conflicts))
     {
         #ifndef NDEBUG
         if (screen > 1)
@@ -154,18 +152,22 @@ bool PVCS::generateChild(int child_id, PBSNode* parent)
         if (conf->priority == 2)
         {
             need_replan_agents[conf->a1] = true;
+            at_goal_agents[conf->a1] = true;
 
             #ifndef NDEBUG
             if (screen > 1)
                 cout << "\ttarget conflict: need to replan agent " << conf->a1 << endl;
             #endif
         }
-        else if (conf->priority == 1 or conf->priority == -1)  // Non-TR conflicts
+        else if (conf->priority == 1 or conf->priority == -1)  // Non-TR conflicts (edges for WMVC)
         {
+            if (at_goal_agents[conf->a1] or at_goal_agents[conf->a2])
+                continue;  // Don't add this edge to CG as we will eventually replan agents at goal
+
             if (!need_replan_agents[conf->a1])
             {
                 var.add(IloNumVar(env, 0, 1, ILOBOOL));
-                sum_obj += var[counter] * parent->ag_weights[conf->a1];
+                sum_obj += var[counter] * node->ag_weights[conf->a1];
                 mvc_agents[conf->a1] = counter;
                 need_replan_agents[conf->a1] = true;
                 counter ++;
@@ -179,7 +181,7 @@ bool PVCS::generateChild(int child_id, PBSNode* parent)
             if (!need_replan_agents[conf->a2])
             {
                 var.add(IloNumVar(env, 0, 1, ILOBOOL));
-                sum_obj += var[counter] * parent->ag_weights[conf->a2];
+                sum_obj += var[counter] * node->ag_weights[conf->a2];
                 mvc_agents[conf->a2] = counter;
                 need_replan_agents[conf->a2] = true;
                 counter ++;
@@ -191,6 +193,11 @@ bool PVCS::generateChild(int child_id, PBSNode* parent)
             }
 
             con.add(var[mvc_agents[conf->a1]] + var[mvc_agents[conf->a2]] >= 1);
+        }
+        else
+        {
+            cerr << "Undefined priority of conflict " << *conf << endl;
+            exit(1);
         }
     }
 
@@ -208,12 +215,15 @@ bool PVCS::generateChild(int child_id, PBSNode* parent)
     cplex.extract(model);
     cplex.setOut(env.getNullStream());
 
-    if (cplex.solve())
+    bool is_solved = cplex.solve();
+    if (is_solved)
     {
-        for (auto& conf :parent->conflicts)
+        for (auto& conf: node->conflicts)
         {
             if (conf->priority != 2)  // we ignore the target conflicts
             {
+                assert(mvc_agents[conf->a1] != -1);
+                assert(mvc_agents[conf->a2] != -1);
                 bool is_a1 = cplex.getValue(var[mvc_agents[conf->a1]]);
                 bool is_a2 = cplex.getValue(var[mvc_agents[conf->a2]]);
 
@@ -224,21 +234,40 @@ bool PVCS::generateChild(int child_id, PBSNode* parent)
                     std::swap(conf->a1, conf->a2);
             }
         }
-        env.end();
-        runtime_run_mvc += (double)(clock()-mvc_start) / CLOCKS_PER_SEC;
     }
     else
     {
         std::cerr << "ERROR" << endl;
         cplex.exportModel("error.lp");
-
-        delete node;
-        parent->children[child_id] = nullptr;
-        env.end();
-        runtime_run_mvc += (double)(clock()-mvc_start) / CLOCKS_PER_SEC;
-        return false;
     }
-    // End MVC
+
+    env.end();
+    runtime_run_mvc += getDuration(mvc_start, steady_clock::now());
+    return is_solved;
+}
+
+// bool PVCS::runTotalOrdering(PBSNode* node)
+// {
+//     vector<int> vc_agents
+//     while (getDuration(start, steady_clock::now()) < time_limit*CLOCKS_PER_SEC)
+//     {
+
+//     }
+// }
+
+bool PVCS::generateChild(int child_id, PBSNode* parent)
+{
+    // Find agents need to be replanned, set to conflict->a1
+    if (!runWMVC(parent)) return false;
+
+    assert(child_id == 0 or child_id == 1);
+    parent->children[child_id] = new PBSNode();
+    PBSNode* node = parent->children[child_id];
+    node->cost = parent->cost;
+    node->depth = parent->depth+1;
+    node->makespan = parent->makespan;
+    node->parent = parent;
+    node->ag_weights.assign(num_of_agents, 1);
 
     for (const auto& conf : parent->conflicts)
     {
@@ -252,7 +281,7 @@ bool PVCS::generateChild(int child_id, PBSNode* parent)
     if (topologicalSort(ordered_agents))  // true if there is at least one cycle
     {
         if (screen > 2)
-            cout << "There is a cycle in the current priority graph!" << endl;
+            cout << "--- There is a cycle in the current priority graph! ---" << endl;
 
         delete node;
         parent->children[child_id] = nullptr;
@@ -314,14 +343,14 @@ bool PVCS::generateChild(int child_id, PBSNode* parent)
             return false;
         }
 
-        // Delete old conflicts
-        for (auto c = node->conflicts.begin(); c != node->conflicts.end();)
-        {
-            if ((*c)->a1 == a or (*c)->a2 == a)
-                c = node->conflicts.erase(c);
-            else
-                ++c;
-        }
+        // // Delete old conflicts
+        // for (auto c = node->conflicts.begin(); c != node->conflicts.end();)
+        // {
+        //     if ((*c)->a1 == a or (*c)->a2 == a)
+        //         c = node->conflicts.erase(c);
+        //     else
+        //         ++c;
+        // }
 
         // Update conflicts and to_replan
         set<int> lower_agents;
@@ -329,7 +358,7 @@ bool PVCS::generateChild(int child_id, PBSNode* parent)
         std::advance(p2, num_of_agents - 1 - rank);
         assert(*p2 == a);
         getLowerPriorityAgents(p2, lower_agents);
-        node->ag_weights[a] = lower_agents.size();  // This is for MVC in new conflicts
+        node->ag_weights[a] = (int)lower_agents.size();  // This is for MVC in new conflicts
         if (screen > 2 and !lower_agents.empty())
         {
             cout << "Lower agents: ";
@@ -343,7 +372,7 @@ bool PVCS::generateChild(int child_id, PBSNode* parent)
         {
             if (a2 == a or lookup_table[a2] or higher_agents.count(a2) > 0)
                 continue;  // already in to_replan or has higher priority
-            clock_t t = clock();
+            steady_clock::time_point t = steady_clock::now();
 
             if (use_tr)
             {
@@ -359,22 +388,25 @@ bool PVCS::generateChild(int child_id, PBSNode* parent)
                         to_replan.emplace(topological_orders[a2], a2);
                         lookup_table[a2] = true;
                     }
-                    else if (priority == 1)
+                    else  // we will resolve this conflict in the next iteration
                     {
-                        node->conflicts.emplace_front(new Conflict(a, a2, priority));
-                    }
-                    else if (priority == 2)  // target conflict
-                    {
-                        if (paths[a]->size() < paths[a2]->size())
-                            node->conflicts.emplace_back(new Conflict(a, a2, priority));
-                        else
-                            node->conflicts.emplace_back(new Conflict(a2, a, priority));
+                        node->ag_weights[a2] = getLowerAgentNum(a2, topological_orders);
+                        if (priority == 1)  // non-target conflict
+                        {
+                            node->conflicts.emplace_front(new Conflict(a, a2, priority));
+                        }
+                        else if (priority == 2)  // target conflict
+                        {
+                            if (paths[a]->size() < paths[a2]->size())
+                                node->conflicts.emplace_back(new Conflict(a, a2, priority));
+                            else
+                                node->conflicts.emplace_back(new Conflict(a2, a, priority));
+                        }
                     }
                 }
             }
-            else if (PBS::hasConflicts(a, a2))
+            else if (hasConflicts(a, a2))
             {
-                node->conflicts.emplace_back(new Conflict(a, a2));
                 if (lower_agents.count(a2) > 0) // has a collision with a lower priority agent
                 {
                     if (screen > 1)
@@ -384,8 +416,13 @@ bool PVCS::generateChild(int child_id, PBSNode* parent)
                     to_replan.emplace(topological_orders[a2], a2);
                     lookup_table[a2] = true;
                 }
+                else
+                {
+                    node->ag_weights[a2] = getLowerAgentNum(a2, topological_orders);
+                    node->conflicts.emplace_back(new Conflict(a, a2));
+                }
             }
-            runtime_detect_conflicts += (double)(clock() - t) / CLOCKS_PER_SEC;
+            runtime_detect_conflicts += getDuration(t, steady_clock::now());
         }
     }
 
@@ -451,4 +488,14 @@ bool PVCS::topologicalSortUtil(int v, vector<bool>& visited,
     onstack[v] = false;
     stack.push_back(v);  // Push current vertex to stack which stores result
     return false;
+}
+
+int PVCS::getLowerAgentNum(int agent, const vector<int>& topo_orders)
+{
+    set<int> tmp_lower_agents;
+    auto tmp_p = ordered_agents.begin();
+    std::advance(tmp_p, num_of_agents - 1 - topo_orders[agent]);
+    assert(*tmp_p == agent);
+    getLowerPriorityAgents(tmp_p, tmp_lower_agents);
+    return (int)tmp_lower_agents.size();
 }

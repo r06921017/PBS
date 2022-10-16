@@ -50,14 +50,13 @@ int main(int argc, char** argv)
 
 	po::notify(vm);
 
-	srand((int)time(0));
-
+	// srand((int)time(0));
 	///////////////////////////////////////////////////////////////////////////
 	// load the instance
 	Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(),
 		vm["agentNum"].as<int>());
 
-	srand(0);
+	// srand(0);
 
 	if (vm["solver"].as<string>() == "PBS")
 	{

@@ -19,4 +19,9 @@ protected:
 
     bool topologicalSort(list<int>& stack);  // Both functions returns true if there is a cycle
     bool topologicalSortUtil(int v, vector<bool>& visited, list<int>& stack, vector<bool>& onstack);
+
+private:
+    bool runWMVC(PBSNode* node);
+    bool runTotalOrdering(PBSNode* node);
+    int getLowerAgentNum(int agent, const vector<int>& topo_orders);
 };
