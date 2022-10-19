@@ -7,8 +7,8 @@
 #include "SpaceTimeAStar.h"
 
 PBS2::PBS2(const Instance& instance, bool sipp, int screen,
-    bool use_tr, bool use_ic, bool use_rr): PBS(instance, sipp, screen), 
-    use_tr(use_tr), use_ic(use_ic), use_rr(use_rr) {}
+    bool use_tr, bool use_ic, bool use_rr, double ic_ratio): PBS(instance, sipp, screen), 
+    use_tr(use_tr), use_ic(use_ic), use_rr(use_rr), ic_ratio(ic_ratio) {}
 
 bool PBS2::solve(clock_t time_limit)
 {
@@ -449,8 +449,12 @@ void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topologi
 
         int num_ic_a1_a2 = (num_higher_ags[conf->a1]+1) * (num_lower_ags[conf->a2]+1);
         int num_ic_a2_a1 = (num_higher_ags[conf->a2]+1) * (num_lower_ags[conf->a1]+1);
-        conf->max_num_ic = max(num_ic_a1_a2, num_ic_a2_a1);
-        if (num_ic_a1_a2 > num_ic_a2_a1)
+
+        double val_a1_a2 = ic_ratio * (double)num_ic_a1_a2 + (1.0-ic_ratio) / (double)(num_lower_ags[conf->a2]+1);
+        double val_a2_a1 = ic_ratio * (double)num_ic_a2_a1 + (1.0-ic_ratio) / (double)(num_lower_ags[conf->a1]+1);
+
+        conf->max_num_ic = max(val_a1_a2, val_a2_a1);
+        if (val_a1_a2 > val_a2_a1)
             std::swap(conf->a1, conf->a2);
     }
     runtime_implicit_constraints += getDuration(t, steady_clock::now());

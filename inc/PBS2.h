@@ -5,13 +5,14 @@ class PBS2 : public PBS
 {
 public:
     PBS2(const Instance& instance, bool sipp, int scrren,
-        bool use_tr, bool use_ic, bool use_rr);
+        bool use_tr, bool use_ic, bool use_rr, double ic_ratio=1.0);
     bool solve(clock_t time_limit);
 
 protected:
     bool use_tr;
     bool use_ic;
     bool use_rr;
+    double ic_ratio;
 
     string getSolverName() const;
 

@@ -1,0 +1,114 @@
+exp_path: "/home/rdaneel/PBS_results/"
+# exp_path: "/home/rdaneel/my_exp_socs2022/"
+# exp_path: "/home/rdaneel/my_exp/"
+ins_num: 25
+time_limit: 300
+set_title: true
+set_legend: true
+plot_ci: false
+plot_std: false
+
+maps:
+  # - name: "random-32-32-20"
+  #   label: Random
+  #   scens:
+  #     - random
+  #   num_of_agents:
+  #     - 50
+  #     - 100
+  #     - 150
+  #     - 200
+
+  - name: "maze-32-32-2"
+    label: Maze
+    scens:
+      - random
+    num_of_agents:
+      - 50
+      - 100
+      - 150
+      - 200
+
+  # - name: "den520d"
+  #   label: Den520d
+  #   scens:
+  #     - random
+  #   num_of_agents:
+  #     - 200
+  #     - 400
+  #     - 600
+  #     - 800
+  #     - 1000
+
+  # - name: "warehouse-10-20-10-2-1"
+  #   label: Warehouse (small)
+  #   scens:
+  #     - random
+  #   num_of_agents:
+  #     - 200
+  #     - 400
+  #     - 600
+  #     - 800
+  #     - 1000
+
+  # - name: "warehouse-20-40-10-2-1"
+  #   label: Warehouse
+  #   scens:
+  #     - random
+  #   num_of_agents:
+  #     - 200
+  #     - 400
+  #     - 600
+  #     - 800
+  #     - 1000  
+
+solvers:
+  # - name: "PP"
+  #   label: "PP"
+  #   color: "deepskyblue"
+  #   marker: "o"
+
+  - name: "PP-LH"
+    label: "PP(LH)"
+    color: "cyan"
+    marker: "v"
+
+  # - name: "PBS0"
+  #   label: "PBS(Random)"
+  #   color: "green"
+  #   marker: "s"
+
+  # - name: "PBS2-0"
+  #   label: "PBS(PE)"
+  #   color: "orange"
+  #   marker: "d"
+  
+  # - name: "PBS2-1"
+  #   label: "PBS(PE+TR)"
+  #   color: "purple"
+  #   marker: "P"
+
+  # - name: "PBS2-3"
+  #   label: "PBS(PE+IC)"
+  #   color: "pink"
+  #   marker: "*"
+
+  # - name: "PBS2-2"
+  #   label: "PBS(PE+TR+IC)"
+  #   color: "red"
+  #   marker: "^"
+
+  # - name: "PBS2-5"
+  #   label: "PBS(PE+TR+RR)"
+  #   color: "silver"
+  #   marker: "D"
+
+  - name: "PBS2-4"
+    label: "PBS(PE+TR+IC+RR)"
+    color: "gold"
+    marker: "p"
+
+  - name: "PVCS-0"
+    label: "PVCS(TR)"
+    color: "brown"
+    marker: "H"

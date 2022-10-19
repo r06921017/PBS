@@ -37,6 +37,7 @@ int main(int argc, char** argv)
 		("solver", po::value<string>()->default_value("PBS"), "Which high-level solver to use")
 		("tr", po::value<bool>()->default_value(1), "using target reasoning")
 		("ic", po::value<bool>()->default_value(1), "using implicit constraint")
+		("alpha", po::value<double>()->default_value(1.0), "the ratio of using implicit constraint")
 		("rr", po::value<bool>()->default_value(0), "using random restart for PBS")
 		("lh", po::value<bool>()->default_value(0), "using LH heuristic for PP")
 		;
@@ -71,8 +72,8 @@ int main(int argc, char** argv)
 	}
 	else if (vm["solver"].as<string>() == "PBS2")
 	{
-		PBS2 pbs2(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>(),
-			vm["tr"].as<bool>(), vm["ic"].as<bool>(), vm["rr"].as<bool>());
+		PBS2 pbs2(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>(), vm["tr"].as<bool>(),
+			vm["ic"].as<bool>(), vm["rr"].as<bool>(), vm["alpha"].as<double>());
 		// run
 		pbs2.solve(vm["cutoffTime"].as<clock_t>());
 		if (vm.count("output"))
