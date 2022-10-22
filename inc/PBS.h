@@ -19,8 +19,6 @@ public:
 
 	uint64_t num_HL_expanded = 0;
 	uint64_t num_HL_generated = 0;
-	uint64_t num_LL_expanded = 0;
-	uint64_t num_LL_generated = 0;
 	uint64_t num_backtrack = 0;
 	uint64_t num_restart = 0;
 

@@ -5,3 +5,5 @@ cmake*
 build
 hpc
 run_local.sh
+script/__pycache__
+script/config_*

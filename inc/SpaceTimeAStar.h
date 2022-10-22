@@ -13,7 +13,7 @@ public:
 
 
 	AStarNode() : LLNode() {}
-
+    AStarNode(const AStarNode& other) : LLNode(other) {} // copy everything except for handles
 	AStarNode(int loc, int g_val, int h_val, LLNode* parent, int timestep, int num_of_conflicts = 0, bool in_openlist = false) :
 		LLNode(loc, g_val, h_val, parent, timestep, num_of_conflicts, in_openlist) {}
 
@@ -56,6 +56,12 @@ public:
 	// lowerbound is an underestimation of the length of the path in order to speed up the search.
     Path findOptimalPath(const set<int>& higher_agents, const vector<Path*>& paths, int agent) override;
     Path findOptimalPath(const ConstraintTable& constraint_table) override;
+
+    // find path by time-space A* search
+    // Returns a path that satisfies the constraint_table while
+    // minimizing the number of conflicts with constraint_table, breaking ties by the path length.
+    Path findPath(const set<int>& higher_agents, const vector<Path*>& paths, int agent) override;
+    Path findPath(const ConstraintTable& constraint_table) override;
 
 	string getName() const override { return "AStar"; }
 

@@ -63,6 +63,10 @@ class SIPP: public SingleAgentSolver
 public:
     Path findOptimalPath(const set<int>& higher_agents, const vector<Path*>& paths, int agent) override;
     Path findOptimalPath(const ConstraintTable& constraint_table) override;
+    
+    // return A path that minimizes collisions, breaking ties by cost
+    Path findPath(const set<int>& higher_agents, const vector<Path*>& paths, int agent) override;
+    Path findPath(const ConstraintTable& constraint_table) override;
 
     string getName() const { return "SIPP"; }
 
@@ -90,11 +94,6 @@ private:
     inline void eraseNodeFromLists(SIPPNode* node);
     void updateFocalList();
     void releaseNodes();
-    void reset()
-    {
-        num_expanded = 0;
-        num_generated = 0;
-    }
     bool dominanceCheck(SIPPNode* new_node);
     void printSearchTree() const;
 };

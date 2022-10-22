@@ -54,7 +54,8 @@ bool PP::solve(double _time_limit)
         vector<pair<int, size_t>> init_path_size;
         for (const auto& ag : ordered_agents)
         {
-            Path init_path = search_engines[ag]->findOptimalPath(constraint_table);
+            // Path init_path = search_engines[ag]->findOptimalPath(constraint_table);
+            Path init_path = search_engines[ag]->findPath(constraint_table);
             init_path_size.emplace_back(ag, init_path.size());
         }
         sort(init_path_size.begin(), init_path_size.end(), sortByPathSize);
@@ -79,12 +80,10 @@ bool PP::solve(double _time_limit)
             int id = *p;
             steady_clock::time_point t = steady_clock::now();
 
-            Path new_path = search_engines[id]->findOptimalPath(constraint_table);
+            // Path new_path = search_engines[id]->findOptimalPath(constraint_table);
+            Path new_path = search_engines[id]->findPath(constraint_table);
 
             runtime_path_finding += getDuration(t, steady_clock::now());
-            num_LL_search_calls ++;
-            num_LL_expanded += search_engines[id]->num_expanded;
-            num_LL_generated += search_engines[id]->num_generated;
             runtime_build_CT += search_engines[id]->runtime_build_CT;
             runtime_build_CAT += search_engines[id]->runtime_build_CAT;
             runtime = getDuration(start, steady_clock::now());
@@ -129,8 +128,7 @@ bool PP::solve(double _time_limit)
         else if (solution_cost == -1)
         {
             runtime = getDuration(start, steady_clock::now());
-            cout << "Timeout," << (double)runtime / CLOCKS_PER_SEC << 
-                ",0,0," << num_LL_expanded << endl;
+            cout << "Timeout," << (double)runtime / CLOCKS_PER_SEC << ",0,0," << endl;
             return solution_found;
         }
         runtime = getDuration(start, steady_clock::now());
@@ -169,11 +167,19 @@ void PP::saveResults(const string &fileName, const string &instanceName) const
     double out_runtime_path_finding = (double)runtime_path_finding / CLOCKS_PER_SEC;
     double out_runtime_preprocessing = (double)runtime_preprocessing / CLOCKS_PER_SEC;
 
+    uint64_t out_search_calls = 0, num_LL_expanded = 0, num_LL_generated = 0;
+    for (int i=0; i < num_of_agents; i++)
+    {
+        out_search_calls += search_engines[i]->num_runs;
+        num_LL_expanded += search_engines[i]->accumulated_num_expanded;
+        num_LL_generated += search_engines[i]->accumulated_num_generated;
+    }
+
 	ofstream stats(fileName, std::ios::app);
 	stats << out_runtime << "," <<
         num_HL_expanded << "," << num_HL_generated << "," <<
         num_LL_expanded << "," << num_LL_generated << "," << 
-        num_restart << "," << num_LL_search_calls << "," <<
+        num_restart << "," << out_search_calls << "," <<
         solution_cost << "," << 0 << "," <<
 		out_runtime_detect_conflicts << "," << out_runtime_build_CT << "," << 
         out_runtime_build_CAT << "," << out_runtime_path_finding << "," << 0 << "," <<
@@ -206,7 +212,11 @@ void PP::clear()
 
 string PP::getSolverName() const
 {
-	return "PP with " + search_engines[0]->getName();
+    string sol_name = "PP";
+    if (use_LH)
+        sol_name += "+LH";
+    sol_name += " with " + search_engines[0]->getName();
+    return sol_name;
 }
 
 int PP::getSumOfCosts() const
@@ -220,15 +230,15 @@ int PP::getSumOfCosts() const
 void PP::printResults() const
 {
 	if (solution_cost >= 0) // solved
-		cout << "Succeed,";
+		cout << "Succeed, ";
 	else if (solution_cost == -1) // time_out
-		cout << "Timeout,";
+		cout << "Timeout, ";
 	else if (solution_cost == -2) // no solution
-		cout << "No solutions,";
+		cout << "No solutions, ";
 	else if (solution_cost == -3) // nodes out
-		cout << "Nodesout,";
+		cout << "Nodesout, ";
 
-	cout << solution_cost << "," << runtime << "," << num_LL_expanded << endl;
+	cout << "Runtime:" << (double)runtime / CLOCKS_PER_SEC << ", cost:" << solution_cost << endl;
     /*if (solution_cost >= 0) // solved
     {
         cout << "fhat = [";

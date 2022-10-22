@@ -68,9 +68,8 @@ bool PVCS::generateRoot()
     for (int i = 0; i < num_of_agents; i++)
     {
         int _ag_ = init_agents[i];
-        Path new_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
-        num_LL_expanded += search_engines[_ag_]->num_expanded;
-        num_LL_generated += search_engines[_ag_]->num_generated;
+        // Path new_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
+        Path new_path = search_engines[_ag_]->findPath(higher_agents, paths, _ag_);
         if (new_path.empty())
         {
             cout << "No path exists for agent " << _ag_ << endl;
@@ -220,17 +219,33 @@ bool PVCS::runWMVC(PBSNode* node)
     {
         for (auto& conf: node->conflicts)
         {
-            if (conf->priority != 2)  // we ignore the target conflicts
+            if (conf->priority != 2)  // we ignore the target conflicts since it is already swapped
             {
                 assert(mvc_agents[conf->a1] != -1);
                 assert(mvc_agents[conf->a2] != -1);
                 bool is_a1 = cplex.getValue(var[mvc_agents[conf->a1]]);
                 bool is_a2 = cplex.getValue(var[mvc_agents[conf->a2]]);
 
+                // Tie breaking rule for the priority assignment
                 // if we need to replan a2, then we swap agents in the conflict or
                 // if we need to replan both agents, then only replan the one with a shorter path
-                if ((!is_a1 and is_a2) or
-                    (is_a1 and is_a2 and paths[conf->a1] > paths[conf->a2]))
+                // if we need to replan both agents, and the path lengths are the same, then
+                // we tie-break with the agent index to avoid cycle
+
+                bool need_swap = false;
+                if (!is_a1 and is_a2)
+                {
+                    need_swap = true;
+                }
+                else if (is_a1 and is_a2)
+                {
+                    if (paths[conf->a1]->size() == paths[conf->a2]->size())
+                        need_swap = conf->a1 > conf->a2;  // we replan agent with a smaller index
+                    else
+                        need_swap = paths[conf->a1]->size() > paths[conf->a2]->size();
+                }
+
+                if (need_swap)
                     std::swap(conf->a1, conf->a2);
             }
         }

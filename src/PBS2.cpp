@@ -99,7 +99,15 @@ PBSNode* PBS2::selectNode()
 
 string PBS2::getSolverName() const
 {
-	return "PBS2 with " + search_engines[0]->getName();
+    string sol_name = "PBS2";
+    if (use_tr)
+        sol_name += "+TR";
+    if (use_ic)
+        sol_name += "+IC";
+    if (use_rr)
+        sol_name += "+RR";
+    sol_name += " with " + search_engines[0]->getName();
+    return sol_name;
 }
 
 bool PBS2::generateRoot()
@@ -113,9 +121,8 @@ bool PBS2::generateRoot()
     for (int i = 0; i < num_of_agents; i++)
     {
         int _ag_ = init_agents[i];
-        Path new_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
-        num_LL_expanded += search_engines[_ag_]->num_expanded;
-        num_LL_generated += search_engines[_ag_]->num_generated;
+        // Path new_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
+        Path new_path = search_engines[_ag_]->findPath(higher_agents, paths, _ag_);
         if (new_path.empty())
         {
             cout << "No path exists for agent " << _ag_ << endl;

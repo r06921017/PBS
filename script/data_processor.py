@@ -359,21 +359,21 @@ class DataProcessor:
             elif isinstance(tmp_range, int):
                 y_list = [str(int(y//label_scale)) for y in y_list]
 
-        # elif y_index == '#high-level generated':
-        #     label_scale = 10
-        #     tmp_range = 2
-        #     scale = label_scale * tmp_range
-        #     y_list = np.arange(0, max(y_list)+5, scale)
+        elif y_index == '#high-level generated':
+            label_scale = 10
+            tmp_range = 2
+            scale = label_scale * tmp_range
+            y_list = np.arange(0, max(y_list)+5, scale)
 
-        #     in_axs.axes.set_yticks(y_list)
-        #     if isinstance(tmp_range, float):
-        #         y_list = [str(y/label_scale) for y in y_list]
-        #     elif isinstance(tmp_range, int):
-        #         y_list = [str(int(y//label_scale)) for y in y_list]
+            in_axs.axes.set_yticks(y_list)
+            if isinstance(tmp_range, float):
+                y_list = [str(y/label_scale) for y in y_list]
+            elif isinstance(tmp_range, int):
+                y_list = [str(int(y//label_scale)) for y in y_list]
 
-        elif y_index == '#pathfinding' or '#low-level search calls' or '#restarts':
-            label_scale = 1
-            tmp_range = 50
+        elif y_index == '#pathfinding' or y_index == '#low-level search calls' or y_index =='#restarts':
+            label_scale = 1000
+            tmp_range = 10
             scale = label_scale * tmp_range
             y_list = np.arange(0, max(y_list)+5, scale)
 
@@ -384,8 +384,8 @@ class DataProcessor:
                 y_list = [str(int(y//label_scale)) for y in y_list]
 
         elif y_index == 'div':
-            y_list = [0, 0.5, 1.0, 1.5]
-            # y_list = [0, 2, 4, 6, 8]
+            # y_list = [0, 0.5, 1.0, 1.5]
+            y_list = [0, 1, 2, 3, 4]
             in_axs.axes.set_yticks(y_list)
 
         elif y_index == 'num_in_conf' or y_index == 'num_ex_conf':
@@ -643,7 +643,7 @@ class DataProcessor:
                             tmp_val = np.inf
                         else:
                             tmp_val = float(tmp_val1) % float(tmp_val2)
-                        
+
                     result[_solver_['name']][_map_['name']]['x'].append(_x_)
                     result[_solver_['name']][_map_['name']]['val'].append(tmp_val)
 
@@ -739,7 +739,7 @@ if __name__ == '__main__':
     # for _m_ in ['min', 'mid', 'max']:
     #     data_processor.get_ins_from_samples(sol_dir=SOLVER_DIR, sol_names=solver_names, mode=_m_)
 
-    # data_processor.plot_fig(x_index='num', y_index='succ')
+    data_processor.plot_fig(x_index='num', y_index='succ')
     # data_processor.plot_fig(x_index='num', y_index='runtime')
     # data_processor.plot_fig(x_index='num', y_index='#low-level search calls')
     # data_processor.plot_fig(x_index='num', y_index='#low-level generated')
@@ -750,8 +750,8 @@ if __name__ == '__main__':
     # data_processor.plot_fig(x_index='num', y_index='#pathfinding')
 
     # data_processor.plot_fig(x_index='ins', y_index='max_ma_size')
-    data_processor.plot_op(x_index='ins',y_index1='#low-level search calls',
-                           y_index2='#high-level generated',use_op='div')
+    # data_processor.plot_op(x_index='ins',y_index1='#low-level search calls',
+    #                        y_index2='#high-level generated',use_op='div')
     # data_processor.plot_fig(x_index='ins', y_index='solution cost')
     # data_processor.plot_fig(x_index='ins', y_index='num_0child')
 

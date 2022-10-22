@@ -215,9 +215,8 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
 bool PBS::findPathForSingleAgent(PBSNode& node, const set<int>& higher_agents, int a, Path& new_path)
 {
     steady_clock::time_point t = steady_clock::now();
-    new_path = search_engines[a]->findOptimalPath(higher_agents, paths, a);  //TODO: add runtime check to the low level
-    num_LL_expanded += search_engines[a]->num_expanded;
-    num_LL_generated += search_engines[a]->num_generated;
+    // new_path = search_engines[a]->findOptimalPath(higher_agents, paths, a);
+    new_path = search_engines[a]->findPath(higher_agents, paths, a);
     runtime_build_CT += search_engines[a]->runtime_build_CT;
     runtime_build_CAT += search_engines[a]->runtime_build_CAT;
     runtime_path_finding += getDuration(t, steady_clock::now());
@@ -406,17 +405,16 @@ void PBS::printPriorityGraph() const
 void PBS::printResults() const
 {
 	if (solution_cost >= 0) // solved
-		cout << "Succeed,";
+		cout << "Succeed, ";
 	else if (solution_cost == -1) // time_out
-		cout << "Timeout,";
+		cout << "Timeout, ";
 	else if (solution_cost == -2) // no solution
-		cout << "No solutions,";
+		cout << "No solutions, ";
 	else if (solution_cost == -3) // nodes out
-		cout << "Nodesout,";
+		cout << "Nodesout, ";
 
-	cout << (double)runtime / CLOCKS_PER_SEC << "," << solution_cost << "," << 
-        num_HL_expanded << "," << num_LL_expanded << "," <<
-		dummy_start->cost << "," << endl;
+	cout << "runtime: " << (double)runtime / CLOCKS_PER_SEC << ", cost:" << solution_cost << 
+        ", #HL:" << num_HL_expanded << ", init cost: " << dummy_start->cost << endl;
 }
 
 void PBS::saveResults(const string &fileName, const string &instanceName) const
@@ -448,14 +446,18 @@ void PBS::saveResults(const string &fileName, const string &instanceName) const
     double out_runtime_implicit_constraints = (double)runtime_implicit_constraints / CLOCKS_PER_SEC;
     double out_runtime_run_mvc = (double)runtime_run_mvc / CLOCKS_PER_SEC;
 
-    uint64_t out_search_calls = 0;
+    uint64_t num_LL_runs = 0, num_LL_expanded = 0, num_LL_generated = 0;
     for (int i = 0; i < num_of_agents; i++)
-        out_search_calls += search_engines[i]->num_of_calls;
+    {
+        num_LL_runs += search_engines[i]->num_runs;
+        num_LL_expanded += search_engines[i]->accumulated_num_expanded;
+        num_LL_generated += search_engines[i]->accumulated_num_generated;
+    }
 
 	ofstream stats(fileName, std::ios::app);
 	stats << out_runtime << "," << num_HL_expanded << "," << num_HL_generated << "," <<
         num_LL_expanded << "," << num_LL_generated << "," << num_backtrack << "," << 
-        out_search_calls << "," << num_restart << "," <<
+        num_LL_runs << "," << num_restart << "," <<
         solution_cost << "," << dummy_start->cost << "," <<
 		out_runtime_detect_conflicts << "," << out_runtime_build_CT << "," << 
         out_runtime_build_CAT << "," << out_runtime_path_finding << "," << 
@@ -608,9 +610,8 @@ bool PBS::generateRoot()
     for (int i = 0; i < num_of_agents; i++)
     {
         int _ag_ = init_agents[i];
-        Path new_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
-        num_LL_expanded += search_engines[_ag_]->num_expanded;
-        num_LL_generated += search_engines[_ag_]->num_generated;
+        // Path new_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
+        Path new_path = search_engines[_ag_]->findPath(higher_agents, paths, _ag_);
         if (new_path.empty())
         {
             cout << "No path exists for agent " << i << endl;

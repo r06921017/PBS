@@ -58,11 +58,13 @@ public:
 	};  // used by FOCAL (heap) to compare nodes (top of the heap has min number-of-conflicts)
 
 
-	LLNode() : location(0), g_val(0), h_val(0), parent(nullptr), timestep(0), num_of_conflicts(0), in_openlist(false), wait_at_goal(false) {}
+	LLNode() : location(0), g_val(0), h_val(0), parent(nullptr), timestep(0), num_of_conflicts(0),
+		in_openlist(false), wait_at_goal(false) {}
 
 	LLNode(int location, int g_val, int h_val, LLNode* parent, int timestep, int num_of_conflicts = 0, bool in_openlist = false) :
 		location(location), g_val(g_val), h_val(h_val), parent(parent), timestep(timestep),
 		num_of_conflicts(num_of_conflicts), in_openlist(in_openlist), wait_at_goal(false) {}
+	LLNode(const LLNode& other) { copy(other); }
 
 	inline int getFVal() const { return g_val + h_val; }
 	void copy(const LLNode& other)
@@ -78,14 +80,17 @@ public:
 	}
 };
 
+std::ostream& operator<<(std::ostream& os, const LLNode& node);
 
 class SingleAgentSolver
 {
 public:
-	uint64_t num_expanded = 0;
-	uint64_t num_generated = 0;
-	uint64_t num_of_calls = 0;
+    uint64_t accumulated_num_expanded = 0;
+    uint64_t accumulated_num_generated = 0;
+    uint64_t accumulated_num_reopened = 0;
+	uint64_t num_runs = 0;
 
+    int num_collisions = -1;
 	clock_t runtime_build_CT = 0; // runtimr of building constraint table
 	clock_t runtime_build_CAT = 0; // runtime of building conflict avoidance table
 
@@ -100,6 +105,8 @@ public:
 
 	virtual Path findOptimalPath(const set<int>& higher_agents, const vector<Path*>& paths, int agent) = 0;
     virtual Path findOptimalPath(const ConstraintTable& constraint_table) = 0;
+	virtual Path findPath(const set<int>& higher_agents, const vector<Path*>& paths, int agent) = 0;
+    virtual Path findPath(const ConstraintTable& constraint_table) = 0;
 	virtual string getName() const = 0;
 
 	list<int> getNextLocations(int curr) const; // including itself and its neighbors
@@ -115,10 +122,26 @@ public:
 	{
 		compute_heuristics();
 	}
-
-  virtual ~SingleAgentSolver(){} 
+	virtual ~SingleAgentSolver(){} 
+	void reset()
+    {
+        if (num_generated > 0)
+        {
+            accumulated_num_expanded += num_expanded;
+            accumulated_num_generated += num_generated;
+            accumulated_num_reopened += num_reopened;
+            num_runs++;
+        }
+        num_expanded = 0;
+        num_generated = 0;
+        num_reopened = 0;
+    }
 
 protected:
+	uint64_t num_expanded = 0;
+	uint64_t num_generated = 0;
+    uint64_t num_reopened = 0;
+
 	int min_f_val; // minimal f value in OPEN
 	double w = 1; // suboptimal bound
 
