@@ -125,13 +125,6 @@ public:
 	virtual ~SingleAgentSolver(){} 
 	void reset()
     {
-        if (num_generated > 0)
-        {
-            accumulated_num_expanded += num_expanded;
-            accumulated_num_generated += num_generated;
-            accumulated_num_reopened += num_reopened;
-            num_runs++;
-        }
         num_expanded = 0;
         num_generated = 0;
         num_reopened = 0;

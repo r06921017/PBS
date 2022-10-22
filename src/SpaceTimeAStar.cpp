@@ -600,6 +600,14 @@ void SpaceTimeAStar::updateFocalList()
 
 void SpaceTimeAStar::releaseNodes()
 {
+    if (num_generated > 0)
+    {
+        accumulated_num_expanded += num_expanded;
+        accumulated_num_generated += num_generated;
+        accumulated_num_reopened += num_reopened;
+        num_runs++;
+    }
+
     open_list.clear();
     focal_list.clear();
     for (auto node: allNodes_table)

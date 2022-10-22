@@ -54,8 +54,8 @@ bool PP::solve(double _time_limit)
         vector<pair<int, size_t>> init_path_size;
         for (const auto& ag : ordered_agents)
         {
-            // Path init_path = search_engines[ag]->findOptimalPath(constraint_table);
-            Path init_path = search_engines[ag]->findPath(constraint_table);
+            // Use the individual shortest path to sort priorities
+            Path init_path = search_engines[ag]->findOptimalPath(constraint_table);
             init_path_size.emplace_back(ag, init_path.size());
         }
         sort(init_path_size.begin(), init_path_size.end(), sortByPathSize);
@@ -152,11 +152,13 @@ void PP::saveResults(const string &fileName, const string &instanceName) const
 	{
 		ofstream addHeads(fileName);
 		addHeads << "runtime,#high-level expanded,#high-level generated," <<
-            "#low-level expanded,#low-level generated,#restart,#low-level search calls," <<
+            "#low-level expanded,#low-level generated,#backtrack," << 
+            "#low-level search calls,#restart," <<
 			"solution cost,root g value," <<
-			"runtime of detecting conflicts,runtime of building constraint tables,runtime of building CATs," <<
-			"runtime of path finding,runtime of generating child nodes," <<
-			"preprocessing runtime,solver name,instance name" << endl;
+			"runtime of detecting conflicts,runtime of building constraint tables," << 
+            "runtime of building CATs,runtime of path finding,runtime of generating child nodes," <<
+			"preprocessing runtime,runtime of implicit constraints,runtime of MVC," << 
+            "solver name,instance name" << endl;
 		addHeads.close();
 	}
 
@@ -167,23 +169,24 @@ void PP::saveResults(const string &fileName, const string &instanceName) const
     double out_runtime_path_finding = (double)runtime_path_finding / CLOCKS_PER_SEC;
     double out_runtime_preprocessing = (double)runtime_preprocessing / CLOCKS_PER_SEC;
 
-    uint64_t out_search_calls = 0, num_LL_expanded = 0, num_LL_generated = 0;
+    uint64_t num_LL_runs = 0, num_LL_expanded = 0, num_LL_generated = 0;
     for (int i=0; i < num_of_agents; i++)
     {
-        out_search_calls += search_engines[i]->num_runs;
+        num_LL_runs += search_engines[i]->num_runs;
         num_LL_expanded += search_engines[i]->accumulated_num_expanded;
         num_LL_generated += search_engines[i]->accumulated_num_generated;
     }
 
 	ofstream stats(fileName, std::ios::app);
-	stats << out_runtime << "," <<
-        num_HL_expanded << "," << num_HL_generated << "," <<
-        num_LL_expanded << "," << num_LL_generated << "," << 
-        num_restart << "," << out_search_calls << "," <<
+	stats << out_runtime << "," << num_HL_expanded << "," << num_HL_generated << "," <<
+        num_LL_expanded << "," << num_LL_generated << "," << 0 << "," <<
+        num_LL_runs << "," << num_restart << "," <<
         solution_cost << "," << 0 << "," <<
 		out_runtime_detect_conflicts << "," << out_runtime_build_CT << "," << 
-        out_runtime_build_CAT << "," << out_runtime_path_finding << "," << 0 << "," <<
-		out_runtime_preprocessing << "," << getSolverName() << "," << instanceName << endl;
+        out_runtime_build_CAT << "," << out_runtime_path_finding << "," << 
+        0 << "," << out_runtime_preprocessing << "," << 
+        0 << "," << 0 << "," << 
+        getSolverName() << "," << instanceName << endl;
 	stats.close();
 }
 
