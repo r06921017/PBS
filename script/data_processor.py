@@ -273,11 +273,16 @@ class DataProcessor:
 
     def subplot_fig(self, x_index, y_index, in_axs, in_map_idx, in_map, in_result):
         _x_ = in_result[self.config['solvers'][0]['name']][in_map['name']]['x']
+        left_bd = -0.1
+        right_bd = 0.1
+        plt_rng = (right_bd - left_bd) / len(self.config['solvers'])
         _num_ = range(1, len(_x_)+1)
 
-        for solver in self.config['solvers']:
+        for s_idx, solver in enumerate(self.config['solvers']):
             _val_ = in_result[solver['name']][in_map['name']]['val']
             _ci_  = in_result[solver['name']][in_map['name']]['ci']
+            if self.config['set_shift']:
+                _num_ = [_n_ + plt_rng*s_idx for _n_ in _num_]
 
             if in_map_idx == 0:
                 if (self.config['plot_std'] or self.config['plot_ci']) and len(_ci_) > 0:
@@ -739,8 +744,8 @@ if __name__ == '__main__':
     # for _m_ in ['min', 'mid', 'max']:
     #     data_processor.get_ins_from_samples(sol_dir=SOLVER_DIR, sol_names=solver_names, mode=_m_)
 
-    data_processor.plot_fig(x_index='num', y_index='succ')
-    # data_processor.plot_fig(x_index='num', y_index='runtime')
+    # data_processor.plot_fig(x_index='num', y_index='succ')
+    data_processor.plot_fig(x_index='num', y_index='runtime')
     # data_processor.plot_fig(x_index='num', y_index='#low-level search calls')
     # data_processor.plot_fig(x_index='num', y_index='#low-level generated')
     # data_processor.plot_fig(x_index='num', y_index='#restarts')
