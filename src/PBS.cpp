@@ -6,9 +6,8 @@
 #include "SpaceTimeAStar.h"
 
 
-PBS::PBS(const Instance& instance, bool sipp, int screen) :
-        screen(screen),
-        num_of_agents(instance.getDefaultNumberOfAgents())
+PBS::PBS(const Instance& instance, int screen, bool sipp) :
+    screen(screen), num_of_agents(instance.getDefaultNumberOfAgents())
 {
     steady_clock::time_point t = steady_clock::now();
 
@@ -332,7 +331,8 @@ void PBS::pushNodes(PBSNode* n1, PBSNode* n2)
 {
     if (n1 != nullptr and n2 != nullptr)
     {
-        if (n1->cost < n2->cost)
+        // if (n1->cost < n2->cost)
+        if (n1->conflicts.size() < n2->conflicts.size())
         {
             pushNode(n2);
             pushNode(n1);

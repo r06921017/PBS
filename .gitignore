@@ -1,9 +1,10 @@
 cmake*
 .idea
 *.csv
+*.png
 .vscode
 build
-hpc
+hpc*
 run_local.sh
 script/__pycache__
 script/config_*

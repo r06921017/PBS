@@ -5,15 +5,11 @@
 #include "SIPP.h"
 #include "SpaceTimeAStar.h"
 
-// utility comparator function to pass to the sort() module
-bool sortByPathSize(const pair<int, size_t> &a, const pair<int, size_t> &b) 
-{ 
-    return (a.second > b.second); 
-} 
 
-PP::PP(const Instance& instance, bool sipp, int screen, bool use_LH) :
+PP::PP(const Instance& instance, int screen, bool sipp, bool is_ll_opt, bool use_LH, bool use_SH) :
     screen(screen), num_of_agents(instance.getDefaultNumberOfAgents()),
-    num_of_cols(instance.num_of_cols), map_size(instance.map_size), use_LH(use_LH)
+    num_of_cols(instance.num_of_cols), map_size(instance.map_size), 
+    is_ll_opt(is_ll_opt), use_LH(use_LH), use_SH(use_SH)
 {
     steady_clock::time_point t = steady_clock::now();
 
@@ -48,7 +44,7 @@ bool PP::solve(double _time_limit)
 
     start = steady_clock::now();  // set timer
 
-    if (use_LH)
+    if (use_LH || use_SH)
     {
         ConstraintTable constraint_table(num_of_cols, map_size);
         vector<pair<int, size_t>> init_path_size;
@@ -58,7 +54,11 @@ bool PP::solve(double _time_limit)
             Path init_path = search_engines[ag]->findOptimalPath(constraint_table);
             init_path_size.emplace_back(ag, init_path.size());
         }
-        sort(init_path_size.begin(), init_path_size.end(), sortByPathSize);
+
+        if (use_LH)
+            sort(init_path_size.begin(), init_path_size.end(), sortByLongerPaths);
+        else if (use_SH)
+            sort(init_path_size.begin(), init_path_size.end(), sortByShorterPaths);
 
         ordered_agents.clear();
         for (const auto& _p_ : init_path_size)
@@ -80,8 +80,11 @@ bool PP::solve(double _time_limit)
             int id = *p;
             steady_clock::time_point t = steady_clock::now();
 
-            // Path new_path = search_engines[id]->findOptimalPath(constraint_table);
-            Path new_path = search_engines[id]->findPath(constraint_table);
+            Path new_path;
+            if (is_ll_opt)
+                new_path = search_engines[id]->findOptimalPath(constraint_table);
+            else
+                new_path = search_engines[id]->findPath(constraint_table);
 
             runtime_path_finding += getDuration(t, steady_clock::now());
             runtime_build_CT += search_engines[id]->runtime_build_CT;
@@ -217,8 +220,15 @@ string PP::getSolverName() const
 {
     string sol_name = "PP";
     if (use_LH)
-        sol_name += "+LH";
-    sol_name += " with " + search_engines[0]->getName();
+        sol_name += "-LH";
+    if (use_SH)
+        sol_name += "-SH";
+    
+    sol_name += " with ";
+    if (is_ll_opt)
+        sol_name += "opt";
+    sol_name += search_engines[0]->getName();
+
     return sol_name;
 }
 

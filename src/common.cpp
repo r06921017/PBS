@@ -21,3 +21,13 @@ bool isSamePath(const Path& p1, const Path& p2)
 	}
 	return true;
 }
+
+// utility comparator function to pass to the sort() module
+bool sortByLongerPaths(const pair<int, size_t> &a, const pair<int, size_t> &b) 
+{ 
+    return (a.second > b.second); 
+}
+bool sortByShorterPaths(const pair<int, size_t> &a, const pair<int, size_t> &b) 
+{ 
+    return (a.second < b.second); 
+} 

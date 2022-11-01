@@ -1,8 +1,8 @@
 #include <PVCS.h>
 #include <ilcplex/ilocplex.h>
 
-PVCS::PVCS(const Instance& instance, bool sipp, int screen, bool use_tr): 
-    PBS(instance, sipp, screen), use_tr(use_tr) {}
+PVCS::PVCS(const Instance& instance, int screen, bool sipp, bool use_tr): 
+    PBS(instance, screen, sipp), use_tr(use_tr) {}
 
 bool PVCS::solve(clock_t time_limit)
 {

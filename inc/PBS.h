@@ -37,7 +37,7 @@ public:
 	// Runs the algorithm until the problem is solved or time is exhausted 
 	virtual bool solve(clock_t _time_limit);
 
-	PBS(const Instance& instance, bool sipp, int screen);
+	PBS(const Instance& instance, int screen, bool sipp=true);
 	void clearSearchEngines();
 	~PBS();
 

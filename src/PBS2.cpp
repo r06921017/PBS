@@ -6,13 +6,15 @@
 #include "SIPP.h"
 #include "SpaceTimeAStar.h"
 
-PBS2::PBS2(const Instance& instance, bool sipp, int screen,
-    bool use_tr, bool use_ic, bool use_rr, double ic_ratio): PBS(instance, sipp, screen), 
-    use_tr(use_tr), use_ic(use_ic), use_rr(use_rr), ic_ratio(ic_ratio) {}
+PBS2::PBS2(const Instance& instance, int screen, bool sipp,
+    bool use_tr, bool use_ic, bool use_rr, uint64_t rr_th, double ic_ratio): 
+    PBS(instance, sipp, screen), use_tr(use_tr), use_ic(use_ic), use_rr(use_rr),
+    rr_th(rr_th), ic_ratio(ic_ratio) {}
 
 bool PBS2::solve(clock_t time_limit)
 {
     this->time_limit = time_limit;
+    size_t local_num_backtrack = 0;
 
     if (screen > 0) // 1 or 2
     {
@@ -68,7 +70,8 @@ bool PBS2::solve(clock_t time_limit)
                 else
                 {
                     num_backtrack ++;
-                    if (use_rr)
+                    local_num_backtrack ++;
+                    if (use_rr && local_num_backtrack > rr_th)
                     {
                         clear();
                         stack<PBSNode*>().swap(open_list);  // clear the open_list
@@ -142,23 +145,20 @@ bool PBS2::generateRoot()
             if (use_tr)
             {
                 int priority = hasConflicts(a1, a2);
-                if(priority == 1)
-                    root->conflicts.emplace_front(new Conflict(a1, a2, priority));
-                else if (priority == 2)  // target conflict
+                if(priority > 0)  // We set agents with longer paths higher priorities
                 {
-                    if (paths[a1]->size() < paths[a2]->size())  // a1 is at its goal location
-                    {
+                    if (paths[a1]->size() > paths[a2]->size())  // a1 is at its goal location
                         root->conflicts.emplace_back(new Conflict(a1, a2, priority));
-                    }
                     else  // a2 is at its goal location
-                    {
                         root->conflicts.emplace_back(new Conflict(a2, a1, priority));
-                    }
                 }
             }
             else if (PBS::hasConflicts(a1, a2))  // not using target reasoning
             {
-                root->conflicts.emplace_back(new Conflict(a1, a2));
+                if (paths[a1]->size() > paths[a2]->size())
+                    root->conflicts.emplace_back(new Conflict(a1, a2));
+                else
+                    root->conflicts.emplace_back(new Conflict(a2, a1));
             }
         }
     }
@@ -183,8 +183,11 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
     node->constraint.set(low, high);
     priority_graph[high][low] = false;
     priority_graph[low][high] = true;
+    #ifndef NDEBUG
     if (screen > 2)
         printPriorityGraph();
+    #endif
+
     topologicalSort(ordered_agents);
     if (screen > 2)
     {
@@ -310,28 +313,33 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
                         to_replan.emplace(topological_orders[a2], a2);
                         lookup_table[a2] = true;
                     }
-                    else if (priority == 1)
+                    else if (paths[a]->size() > paths[a2]->size())
                     {
-                        node->conflicts.emplace_front(new Conflict(a, a2, priority));
+                        // TR is included as we always prefer to replan agent with longer-paths
+                        node->conflicts.emplace_back(new Conflict(a, a2, priority));
                     }
-                    else if (priority == 2)
+                    else
                     {
-                        if (paths[a]->size() < paths[a2]->size())
-                            node->conflicts.emplace_back(new Conflict(a, a2, priority));
-                        else
-                            node->conflicts.emplace_back(new Conflict(a2, a, priority));
+                        node->conflicts.emplace_back(new Conflict(a2, a, priority));
                     }
                 }
             }
             else if (PBS::hasConflicts(a, a2))
             {
-                node->conflicts.emplace_back(new Conflict(a, a2));
                 if (lower_agents.count(a2) > 0) // has a collision with a lower priority agent
                 {
                     if (screen > 1)
                         cout << "\tshould replan " << a2 << " for colliding with " << a << endl;
                     to_replan.emplace(topological_orders[a2], a2);
                     lookup_table[a2] = true;
+                }
+                else
+                {
+                    node->conflicts.emplace_back(new Conflict(a, a2));
+                    // if (paths[a]->size() < paths[a2]->size())
+                    //     node->conflicts.emplace_back(new Conflict(a, a2));
+                    // else
+                    //     node->conflicts.emplace_back(new Conflict(a2, a));
                 }
             }
             runtime_detect_conflicts += getDuration(t, steady_clock::now());
@@ -457,8 +465,10 @@ void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topologi
         int num_ic_a1_a2 = (num_higher_ags[conf->a1]+1) * (num_lower_ags[conf->a2]+1);
         int num_ic_a2_a1 = (num_higher_ags[conf->a2]+1) * (num_lower_ags[conf->a1]+1);
 
-        double val_a1_a2 = ic_ratio * (double)num_ic_a1_a2 + (1.0-ic_ratio) / (double)(num_lower_ags[conf->a2]+1);
-        double val_a2_a1 = ic_ratio * (double)num_ic_a2_a1 + (1.0-ic_ratio) / (double)(num_lower_ags[conf->a1]+1);
+        // double val_a1_a2 = ic_ratio * (double)num_ic_a1_a2 - (1.0-ic_ratio) / (double)(num_lower_ags[conf->a2]+1);
+        // double val_a2_a1 = ic_ratio * (double)num_ic_a2_a1 - (1.0-ic_ratio) / (double)(num_lower_ags[conf->a1]+1);
+        double val_a1_a2 = num_higher_ags[conf->a1];
+        double val_a2_a1 = num_higher_ags[conf->a2];
 
         conf->max_num_ic = max(val_a1_a2, val_a2_a1);
         if (val_a1_a2 > val_a2_a1)

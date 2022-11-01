@@ -28,18 +28,22 @@ int main(int argc, char** argv)
 		("agents,a", po::value<string>()->required(), "input file for agents")
 		("output,o", po::value<string>(), "output file for statistics")
 		("outputPaths", po::value<string>(), "output file for paths")
+		("outputPT", po::value<string>(), "output file for prioritized tree")
 		("agentNum,k", po::value<int>()->default_value(0), "number of agents")
 		("cutoffTime,t", po::value<clock_t>()->default_value(7200), "cutoff time (seconds)")
 		("screen,s", po::value<int>()->default_value(1), "screen option (0: none; 1: results; 2:all)")
 		("stats", po::value<bool>()->default_value(false), "write to files some detailed statistics")
 
-		("sipp", po::value<bool>()->default_value(1), "using SIPP as the low-level solver")
+		("sipp", po::value<bool>()->default_value(1), "using SIPPS as the low-level solver")
+		("opt", po::value<bool>()->default_value(0), "using optimal low-level SIPPS")
 		("solver", po::value<string>()->default_value("PBS"), "Which high-level solver to use")
-		("tr", po::value<bool>()->default_value(1), "using target reasoning")
-		("ic", po::value<bool>()->default_value(1), "using implicit constraint")
+		("tr", po::value<bool>()->default_value(0), "using target reasoning")
+		("ic", po::value<bool>()->default_value(0), "using implicit constraint")
 		("alpha", po::value<double>()->default_value(1.0), "the ratio of using implicit constraint")
 		("rr", po::value<bool>()->default_value(0), "using random restart for PBS")
+		("rth", po::value<uint64_t>()->default_value(0), "threshold to random restart for PBS")
 		("lh", po::value<bool>()->default_value(0), "using LH heuristic for PP")
+		("sh", po::value<bool>()->default_value(0), "using SH heuristic for PP")
 		;
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -60,7 +64,7 @@ int main(int argc, char** argv)
 
 	if (vm["solver"].as<string>() == "PBS")
 	{
-		PBS pbs(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>());
+		PBS pbs(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>());
 		// run
 		pbs.solve(vm["cutoffTime"].as<clock_t>());
 		if (vm.count("output"))
@@ -71,19 +75,21 @@ int main(int argc, char** argv)
 	}
 	else if (vm["solver"].as<string>() == "PBS2")
 	{
-		PBS2 pbs2(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>(), vm["tr"].as<bool>(),
-			vm["ic"].as<bool>(), vm["rr"].as<bool>(), vm["alpha"].as<double>());
+		PBS2 pbs2(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>(), vm["tr"].as<bool>(),
+			vm["ic"].as<bool>(), vm["rr"].as<bool>(), vm["rth"].as<uint64_t>(), vm["alpha"].as<double>());
 		// run
 		pbs2.solve(vm["cutoffTime"].as<clock_t>());
 		if (vm.count("output"))
 			pbs2.saveResults(vm["output"].as<string>(), vm["agents"].as<string>());
 		if (pbs2.solution_found && vm.count("outputPaths"))
 			pbs2.savePaths(vm["outputPaths"].as<string>());
+		if (pbs2.solution_found && vm.count("outputPT"))
+			pbs2.saveCT(vm["outputPT"].as<string>());
 		pbs2.clearSearchEngines();
 	}
 	else if (vm["solver"].as<string>() == "PVCS")
 	{
-		PVCS pvcs(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>(), vm["tr"].as<bool>());
+		PVCS pvcs(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>(), vm["tr"].as<bool>());
 		// run
 		pvcs.solve(vm["cutoffTime"].as<clock_t>());
 		if (vm.count("output"))
@@ -94,7 +100,14 @@ int main(int argc, char** argv)
 	}
 	else if (vm["solver"].as<string>() == "PP")
 	{
-		PP pp(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>(), vm["lh"].as<bool>());
+		if (vm["lh"].as<bool>() and vm["sh"].as<bool>())
+		{
+			cerr << "ERROR: --lh and --sh should not be true at the same time!" << endl;
+			exit(1);
+		}
+
+		PP pp(instance,  vm["screen"].as<int>(), vm["sipp"].as<bool>(),
+			vm["opt"].as<bool>(), vm["lh"].as<bool>(), vm["sh"].as<bool>());
 		// run
 		pp.solve(vm["cutoffTime"].as<clock_t>());
 		if (vm.count("output"))

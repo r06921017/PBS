@@ -77,3 +77,6 @@ inline clock_t getDuration(steady_clock::time_point start, steady_clock::time_po
     }
 };*/
 
+// utility comparator function to pass to the sort() module
+bool sortByLongerPaths(const pair<int, size_t> &a, const pair<int, size_t> &b);
+bool sortByShorterPaths(const pair<int, size_t> &a, const pair<int, size_t> &b); 

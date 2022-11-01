@@ -1,8 +1,17 @@
-exp_path: "/home/rdaneel/PBS_results2/"
+exp_path: "/home/rdaneel/PBS_results/"
 ins_num: 25
-time_limit: 300
+time_limit: 60
+time_gap: 10
+
+figure_width: 10
+figure_height: 10
 set_title: true
 set_legend: true
+marker_size: 25
+line_width: 4.0
+marker_width: 4.0
+text_size: 27
+
 set_shift: true
 plot_ci: false
 plot_std: false
@@ -13,48 +22,36 @@ maps:
   #   scens:
   #     - random
   #   num_of_agents:
-  #     - 50
-  #     - 100
-  #     - 150
   #     - 200
+  #     - 250
+  #     - 300
+  #     - 350
+  #     - 400
 
-  - name: "maze-32-32-2"
-    label: Maze
-    scens:
-      - random
-    num_of_agents:
-      - 50
-      - 100
-      - 150
-      - 200
-      - 250
-      - 300
-
-  # - name: "room-32-32-4"
-  #   label: Room
+  # - name: "maze-32-32-2"
+  #   label: Maze
   #   scens:
   #     - random
   #   num_of_agents:
-  #     - 50
   #     - 100
   #     - 150
   #     - 200
   #     - 250
   #     - 300
 
-  # - name: "den520d"
-  #   label: Den520d
+  # - name: "room-32-32-4"
+  #   label: Room
   #   scens:
   #     - random
   #   num_of_agents:
+  #     - 100
+  #     - 150
   #     - 200
-  #     - 400
-  #     - 600
-  #     - 800
-  #     - 1000
+  #     - 250
+  #     - 300
 
   # - name: "warehouse-10-20-10-2-1"
-  #   label: Warehouse (small)
+  #   label: Warehouse(M)
   #   scens:
   #     - random
   #   num_of_agents:
@@ -65,7 +62,7 @@ maps:
   #     - 1000
 
   # - name: "warehouse-20-40-10-2-1"
-  #   label: Warehouse
+  #   label: Warehouse(L)
   #   scens:
   #     - random
   #   num_of_agents:
@@ -75,58 +72,47 @@ maps:
   #     - 800
   #     - 1000
 
+  - name: "den520d"
+    label: Den520d
+    scens:
+      - random
+    num_of_agents:
+      - 200
+      - 400
+      - 600
+      - 800
+      - 1000
+
 solvers:
+  - name: "PP-OPT"
+    label: "PP*"
+    color: "skyblue"
+    marker: "o"
+    markerfacecolor: "skyblue"
+
   - name: "PP"
     label: "PP"
     color: "deepskyblue"
     marker: "o"
 
+  - name: "PP-OPT-LH"
+    label: "PP*(LH)"
+    marker: "P"
+    color: "gray"
+    markerfacecolor: "gray"
+
   - name: "PP-LH"
     label: "PP(LH)"
-    color: "cyan"
-    marker: "v"
+    color: "dimgray"
+    marker: "P"
 
-  - name: "PBS-0"
-    label: "PBS(Random)"
+  - name: "PP-OPT-SH"
+    label: "PP*(SH)"
+    color: "limegreen"
+    marker: "s"
+    markerfacecolor: "limegreen"
+
+  - name: "PP-SH"
+    label: "PP(SH)"
     color: "green"
     marker: "s"
-
-  # - name: "PBS2-1"
-  #   label: "PBS(PE+TR)"
-  #   color: "blue"
-  #   marker: ">"
-
-  # - name: "PBS2-2"
-  #   label: "PBS(PE+TR+IC)"
-  #   color: "pink"
-  #   marker: "h"
-
-  # - name: "PBS2-6"
-  #   label: "PBS(PE+RR)"
-  #   color: "orange"
-  #   marker: "d"
-
-  # - name: "PBS2-7"
-  #   label: "PBS(PE+TR+RR)"
-  #   color: "gray"
-  #   marker: "+"
-
-  # - name: "PBS2-8"
-  #   label: "PBS(PE+IC+RR)"
-  #   color: "purple"
-  #   marker: "H"
-
-  - name: "PBS2-4"
-    label: "PBS(PE+TR+IC+RR)"
-    color: "gold"
-    marker: "p"
-
-  - name: "PBS2-9-0.8"
-    label: "PBS(PE+TR+LIC(0.8)+RR)"
-    color: "red"
-    marker: "^"
-
-  # - name: "PVCS-0"
-  #   label: "PVCS(TR)"
-  #   color: "brown"
-  #   marker: "H"
