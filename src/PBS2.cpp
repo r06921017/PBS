@@ -6,10 +6,10 @@
 #include "SIPP.h"
 #include "SpaceTimeAStar.h"
 
-PBS2::PBS2(const Instance& instance, int screen, bool sipp,
-    bool use_tr, bool use_ic, bool use_rr, uint64_t rr_th, double ic_ratio): 
-    PBS(instance, sipp, screen), use_tr(use_tr), use_ic(use_ic), use_rr(use_rr),
-    rr_th(rr_th), ic_ratio(ic_ratio) {}
+PBS2::PBS2(const Instance& instance, int screen, bool sipp, bool is_ll_opt,
+    bool use_tr, bool use_ic, bool use_rr, uint64_t rr_th, double ic_ratio, bool use_LH, bool use_SH): 
+    PBS(instance, screen, sipp, is_ll_opt), use_tr(use_tr), use_ic(use_ic), use_rr(use_rr),
+    rr_th(rr_th), ic_ratio(ic_ratio), use_LH(use_LH), use_SH(use_SH) {}
 
 bool PBS2::solve(clock_t time_limit)
 {
@@ -76,6 +76,7 @@ bool PBS2::solve(clock_t time_limit)
                         clear();
                         stack<PBSNode*>().swap(open_list);  // clear the open_list
                         num_restart ++;
+                        local_num_backtrack = 0;
                         break;  // leave the while loop of open_list.empty
                     }
                 }
@@ -118,14 +119,44 @@ bool PBS2::generateRoot()
 	PBSNode* root = new PBSNode();
 	root->cost = 0;
 	paths = vector<Path*>(num_of_agents, nullptr);
-    std::random_shuffle(init_agents.begin(), init_agents.end());
 
-    set<int> higher_agents;
-    for (int i = 0; i < num_of_agents; i++)
+    // Order agents initially
+    if ((use_LH or use_SH) and num_restart == 0)
     {
-        int _ag_ = init_agents[i];
-        // Path new_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
-        Path new_path = search_engines[_ag_]->findPath(higher_agents, paths, _ag_);
+        set<int> higher_agents;  // Pseudo agents
+        vector<pair<int, size_t>> init_path_size;
+        for (const auto& ag : init_agents)
+        {
+            // Use the individual shortest path to sort priorities
+            Path init_path = search_engines[ag]->findOptimalPath(higher_agents, paths, ag);
+            init_path_size.emplace_back(ag, init_path.size());
+        }
+
+        if (use_LH)
+            sort(init_path_size.begin(), init_path_size.end(), sortByLongerPaths);
+        else if (use_SH)
+            sort(init_path_size.begin(), init_path_size.end(), sortByShorterPaths);
+
+        init_agents.clear();
+        for (const auto& _p_ : init_path_size)
+        {
+            init_agents.push_back(_p_.first);
+        }
+    }
+    else
+    {
+        std::random_shuffle(init_agents.begin(), init_agents.end());
+    }
+
+    // Find a path for individual agents
+    set<int> higher_agents;
+    for (const int& _ag_ : init_agents)
+    {
+        Path new_path;
+        if (is_ll_opt)
+            new_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
+        else
+            new_path = search_engines[_ag_]->findPath(higher_agents, paths, _ag_);
         if (new_path.empty())
         {
             cout << "No path exists for agent " << _ag_ << endl;
@@ -136,6 +167,19 @@ bool PBS2::generateRoot()
         root->makespan = max(root->makespan, new_path.size() - 1);
         root->cost += (int)new_path.size() - 1;
     }
+
+    #ifndef NDEBUG
+    if (screen > 1)
+    {
+        cout << "\nll exp: ";
+        for (const int& jj : init_agents)
+            cout << search_engines[jj]->getNumExpanded() << ", ";
+            // cout << paths[jj]->size() - 1 << ",";
+        cout << endl;
+    }
+    #endif
+
+    // Find all conflicts among paths
     steady_clock::time_point t = steady_clock::now();
 	root->depth = 0;
     for (int a1 = 0; a1 < num_of_agents; a1++)
@@ -145,17 +189,25 @@ bool PBS2::generateRoot()
             if (use_tr)
             {
                 int priority = hasConflicts(a1, a2);
-                if(priority > 0)  // We set agents with longer paths higher priorities
+                if (priority > 0)
                 {
-                    if (paths[a1]->size() > paths[a2]->size())  // a1 is at its goal location
-                        root->conflicts.emplace_back(new Conflict(a1, a2, priority));
-                    else  // a2 is at its goal location
-                        root->conflicts.emplace_back(new Conflict(a2, a1, priority));
+                    // We set agents with longer paths higher priorities
+                    shared_ptr<Conflict> new_conflict;
+                    if (paths[a1]->size() < paths[a2]->size())
+                        new_conflict = make_shared<Conflict>(a1, a2, priority);
+                    else
+                        new_conflict = make_shared<Conflict>(a2, a1, priority);
+
+                    // Prioritize to resolve target conflicts earlier others
+                    if (priority == 1)
+                        root->conflicts.push_front(new_conflict);
+                    else if(priority == 2)
+                        root->conflicts.push_back(new_conflict);
                 }
             }
             else if (PBS::hasConflicts(a1, a2))  // not using target reasoning
             {
-                if (paths[a1]->size() > paths[a2]->size())
+                if (paths[a1]->size() < paths[a2]->size())
                     root->conflicts.emplace_back(new Conflict(a1, a2));
                 else
                     root->conflicts.emplace_back(new Conflict(a2, a1));
@@ -163,6 +215,15 @@ bool PBS2::generateRoot()
         }
     }
     runtime_detect_conflicts += getDuration(t, steady_clock::now());
+
+    // Initialize the matrix for the number of implicit constraints
+    // Initially, there is no implicit constraints
+    if (use_ic)
+    {
+        root->num_IC = make_shared<vector<vector<uint>>>(
+            vector<vector<uint>>(num_of_agents, vector<uint>(num_of_agents, 0)));
+    }
+
     num_HL_generated++;
     root->time_generated = num_HL_generated;
     if (screen > 1)
@@ -304,7 +365,7 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
             if (use_tr)
             {
                 int priority = hasConflicts(a, a2);
-                if (priority > 0)
+                if (priority > 0)  // there is a conflict
                 {
                     if (lower_agents.count(a2) > 0) // has a collision with a lower priority agent
                     {
@@ -313,14 +374,19 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
                         to_replan.emplace(topological_orders[a2], a2);
                         lookup_table[a2] = true;
                     }
-                    else if (paths[a]->size() > paths[a2]->size())
-                    {
-                        // TR is included as we always prefer to replan agent with longer-paths
-                        node->conflicts.emplace_back(new Conflict(a, a2, priority));
-                    }
                     else
                     {
-                        node->conflicts.emplace_back(new Conflict(a2, a, priority));
+                        shared_ptr<Conflict> new_conflict;
+                        if (paths[a]->size() < paths[a2]->size())
+                            new_conflict = make_shared<Conflict>(a, a2, priority);
+                        else
+                            new_conflict = make_shared<Conflict>(a2, a, priority);
+
+                        // Prioritize to resolve target conflicts earlier others
+                        if (priority == 1)
+                            node->conflicts.push_front(new_conflict);
+                        else if (priority == 2)  // Target conflict
+                            node->conflicts.push_back(new_conflict);
                     }
                 }
             }
@@ -335,11 +401,10 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
                 }
                 else
                 {
-                    node->conflicts.emplace_back(new Conflict(a, a2));
-                    // if (paths[a]->size() < paths[a2]->size())
-                    //     node->conflicts.emplace_back(new Conflict(a, a2));
-                    // else
-                    //     node->conflicts.emplace_back(new Conflict(a2, a));
+                    if (paths[a]->size() < paths[a2]->size())
+                        node->conflicts.emplace_back(new Conflict(a, a2));
+                    else
+                        node->conflicts.emplace_back(new Conflict(a2, a));
                 }
             }
             runtime_detect_conflicts += getDuration(t, steady_clock::now());
@@ -380,10 +445,11 @@ int PBS2::hasConflicts(int a1, int a2) const
 	{
 		int loc1 = paths[a1]->at(timestep).location;
 		int loc2 = paths[a2]->at(timestep).location;
-		if (loc1 == loc2 or (timestep < min_path_length - 1 and loc1 == paths[a2]->at(timestep + 1).location
-                             and loc2 == paths[a1]->at(timestep + 1).location)) // vertex or edge conflict
+		if (loc1 == loc2 or (timestep < min_path_length - 1 and
+                             loc1 == paths[a2]->at(timestep + 1).location and
+                             loc2 == paths[a1]->at(timestep + 1).location))
 		{
-            return 1;
+            return 1;  // vertex or edge conflict
 		}
 	}
     return 0; // conflict-free
@@ -402,7 +468,7 @@ shared_ptr<Conflict> PBS2::chooseConflict(const PBSNode &node) const
     if (use_ic)
     {
         for (const auto& conf : node.conflicts)
-            if (out->max_num_ic < conf->max_num_ic)
+            if (conf->max_num_ic > out->max_num_ic)
                 out = conf;
     }
 
@@ -413,62 +479,77 @@ void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topologi
 {
     vector<int> num_higher_ags(num_of_agents, -1);
     vector<int> num_lower_ags(num_of_agents, -1);
+
+    vector<set<int>> higher_pri_agents(num_of_agents);
+    vector<set<int>> lower_pri_agents(num_of_agents);
+
     list<int>::reverse_iterator ag_rit;
     list<int>::iterator ag_it;
-    set<int> tmp_agents;
 
     steady_clock::time_point t = steady_clock::now();
     for (auto& conf : node->conflicts)
     {
         if (conf->priority == 2) continue;
 
-        if (num_higher_ags[conf->a1] == -1)
+        if (higher_pri_agents[conf->a1].empty())
         {
             ag_rit = ordered_agents.rbegin();
             std::advance(ag_rit, topological_orders[conf->a1]);
             assert(*ag_rit == conf->a1);
-            getHigherPriorityAgents(ag_rit, tmp_agents);
-            num_higher_ags[conf->a1] = (int) tmp_agents.size();
-            tmp_agents.clear();
+            getHigherPriorityAgents(ag_rit, higher_pri_agents[conf->a1]);
         }
 
-        if (num_lower_ags[conf->a1] == -1)
-        {
-            ag_it = ordered_agents.begin();
-            std::advance(ag_it, num_of_agents - 1 - topological_orders[conf->a1]);
-            assert(*ag_it == conf->a1);
-            getLowerPriorityAgents(ag_it, tmp_agents);
-            num_lower_ags[conf->a1] = (int) tmp_agents.size();
-            tmp_agents.clear();
-        }
-
-        if (num_higher_ags[conf->a2] == -1)
-        {
-            ag_rit = ordered_agents.rbegin();
-            std::advance(ag_rit, topological_orders[conf->a2]);
-            assert(*ag_rit == conf->a2);
-            getHigherPriorityAgents(ag_rit, tmp_agents);
-            num_higher_ags[conf->a2] = (int) tmp_agents.size();
-            tmp_agents.clear();
-        }
-
-        if (num_lower_ags[conf->a2] == -1)
+        if (lower_pri_agents[conf->a2].empty())
         {
             ag_it = ordered_agents.begin();
             std::advance(ag_it, num_of_agents - 1 - topological_orders[conf->a2]);
             assert(*ag_it == conf->a2);
-            getLowerPriorityAgents(ag_it, tmp_agents);
-            num_lower_ags[conf->a2] = (int) tmp_agents.size();
-            tmp_agents.clear();
+            getLowerPriorityAgents(ag_it, lower_pri_agents[conf->a2]);
         }
 
-        int num_ic_a1_a2 = (num_higher_ags[conf->a1]+1) * (num_lower_ags[conf->a2]+1);
-        int num_ic_a2_a1 = (num_higher_ags[conf->a2]+1) * (num_lower_ags[conf->a1]+1);
+        uint num_ic_a1_a2 = (uint) ((higher_pri_agents[conf->a1].size()+1) * (lower_pri_agents[conf->a2].size()+1));
+        for (const auto& h_ag : higher_pri_agents[conf->a1])
+        {
+            for (const auto& l_ag : lower_pri_agents[conf->a2])
+            {
+                if (priority_graph[l_ag][h_ag])  // Reduce the IC that already exists
+                {
+                    num_ic_a1_a2 -= node->num_IC->at(l_ag).at(h_ag);
+                }
+            }
+        }
+        node->num_IC->at(conf->a2).at(conf->a1) = num_ic_a1_a2;
+        double val_a1_a2 = ic_ratio * (double)num_ic_a1_a2 + (1.0-ic_ratio) / (double)(lower_pri_agents[conf->a2].size()+1);
 
-        // double val_a1_a2 = ic_ratio * (double)num_ic_a1_a2 - (1.0-ic_ratio) / (double)(num_lower_ags[conf->a2]+1);
-        // double val_a2_a1 = ic_ratio * (double)num_ic_a2_a1 - (1.0-ic_ratio) / (double)(num_lower_ags[conf->a1]+1);
-        double val_a1_a2 = num_higher_ags[conf->a1];
-        double val_a2_a1 = num_higher_ags[conf->a2];
+        if (higher_pri_agents[conf->a2].empty())
+        {
+            ag_rit = ordered_agents.rbegin();
+            std::advance(ag_rit, topological_orders[conf->a2]);
+            assert(*ag_rit == conf->a2);
+            getHigherPriorityAgents(ag_rit, higher_pri_agents[conf->a2]);
+        }
+
+        if (lower_pri_agents[conf->a1].empty())
+        {
+            ag_it = ordered_agents.begin();
+            std::advance(ag_it, num_of_agents - 1 - topological_orders[conf->a1]);
+            assert(*ag_it == conf->a1);
+            getLowerPriorityAgents(ag_it, lower_pri_agents[conf->a1]);
+        }
+
+        uint num_ic_a2_a1 = (uint) (higher_pri_agents[conf->a2].size()+1) * (lower_pri_agents[conf->a1].size()+1);
+        for (const auto& h_ag : higher_pri_agents[conf->a2])
+        {
+            for (const auto& l_ag : lower_pri_agents[conf->a1])
+            {
+                if (priority_graph[l_ag][h_ag])  // Reduce the IC that already exists
+                {
+                    num_ic_a2_a1 -= node->num_IC->at(l_ag).at(h_ag);
+                }
+            }
+        }
+        node->num_IC->at(conf->a1).at(conf->a2) = num_ic_a2_a1;
+        double val_a2_a1 = ic_ratio * (double)num_ic_a2_a1 + (1.0-ic_ratio) / (double)(lower_pri_agents[conf->a1].size()+1);
 
         conf->max_num_ic = max(val_a1_a2, val_a2_a1);
         if (val_a1_a2 > val_a2_a1)

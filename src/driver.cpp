@@ -33,10 +33,12 @@ int main(int argc, char** argv)
 		("cutoffTime,t", po::value<clock_t>()->default_value(7200), "cutoff time (seconds)")
 		("screen,s", po::value<int>()->default_value(1), "screen option (0: none; 1: results; 2:all)")
 		("stats", po::value<bool>()->default_value(false), "write to files some detailed statistics")
+		("seed", po::value<int>()->default_value(-1), "Set random seed")
 
 		("sipp", po::value<bool>()->default_value(1), "using SIPPS as the low-level solver")
 		("opt", po::value<bool>()->default_value(0), "using optimal low-level SIPPS")
 		("solver", po::value<string>()->default_value("PBS"), "Which high-level solver to use")
+		("greedy", po::value<bool>()->default_value(0), "True if PBS chooses the child PT node with the lower number of conflicts")
 		("tr", po::value<bool>()->default_value(0), "using target reasoning")
 		("ic", po::value<bool>()->default_value(0), "using implicit constraint")
 		("alpha", po::value<double>()->default_value(1.0), "the ratio of using implicit constraint")
@@ -55,7 +57,10 @@ int main(int argc, char** argv)
 
 	po::notify(vm);
 
-	srand((int)time(0));
+	if (vm["seed"].as<int>() == -1)
+		srand((int)time(0));
+	else
+		srand(vm["seed"].as<int>());
 
 	///////////////////////////////////////////////////////////////////////////
 	// load the instance
@@ -64,7 +69,8 @@ int main(int argc, char** argv)
 
 	if (vm["solver"].as<string>() == "PBS")
 	{
-		PBS pbs(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>());
+		PBS pbs(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>(), 
+			vm["opt"].as<bool>(), vm["greedy"].as<bool>());
 		// run
 		pbs.solve(vm["cutoffTime"].as<clock_t>());
 		if (vm.count("output"))
@@ -75,8 +81,9 @@ int main(int argc, char** argv)
 	}
 	else if (vm["solver"].as<string>() == "PBS2")
 	{
-		PBS2 pbs2(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>(), vm["tr"].as<bool>(),
-			vm["ic"].as<bool>(), vm["rr"].as<bool>(), vm["rth"].as<uint64_t>(), vm["alpha"].as<double>());
+		PBS2 pbs2(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>(), vm["opt"].as<bool>(),
+			vm["tr"].as<bool>(), vm["ic"].as<bool>(), vm["rr"].as<bool>(), vm["rth"].as<uint64_t>(),
+			vm["alpha"].as<double>(), vm["lh"].as<bool>(), vm["sh"].as<bool>());
 		// run
 		pbs2.solve(vm["cutoffTime"].as<clock_t>());
 		if (vm.count("output"))

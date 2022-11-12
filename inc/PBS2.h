@@ -4,8 +4,9 @@
 class PBS2 : public PBS
 {
 public:
-    PBS2(const Instance& instance, int scrren, bool sipp,
-        bool use_tr, bool use_ic, bool use_rr, uint64_t rr_th=0, double ic_ratio=1.0);
+    PBS2(const Instance& instance, int screen, bool sipp, bool is_ll_opt=false,
+        bool use_tr=false, bool use_ic=false, bool use_rr=false,  uint64_t rr_th=0,
+        double ic_ratio=1.0, bool use_LH=false, bool use_SH=false);
     bool solve(clock_t time_limit);
 
 protected:
@@ -14,6 +15,8 @@ protected:
     bool use_rr;
     uint64_t rr_th;
     double ic_ratio;
+    bool use_LH;
+    bool use_SH;
 
     string getSolverName() const;
 

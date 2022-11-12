@@ -63,6 +63,8 @@ inline clock_t getDuration(steady_clock::time_point start, steady_clock::time_po
     return std::chrono::duration_cast<microseconds>(end - start).count();
 };
 
+void printPath(const Path& _path_);
+
 // Only for three-tuples of std::hash-able types for simplicity.
 // You can of course template this struct to allow other hash functions
 /*struct three_tuple_hash {

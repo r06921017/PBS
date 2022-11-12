@@ -58,6 +58,8 @@ public:
     };
 };
 
+std::ostream& operator<<(std::ostream& os, const SIPPNode& node);
+
 class SIPP: public SingleAgentSolver
 {
 public:

@@ -49,6 +49,9 @@ public:
     void insert2CAT(const Path& path); // insert a path to the collision avoidance table
     //int getCATMaxTimestep() const {return cat_max_timestep;}
 
+    void printCT(void) const;
+    void printCAT(void) const;
+
 protected:
     friend class ReservationTable;
     typedef unordered_map<size_t, list< pair<int, int> > > CT; // constraint table

@@ -59,6 +59,7 @@ private:
 	void printResults() const;
 
 	bool validateSolution() const;
+	bool hasConflicts(int a1, int a2) const;
 	inline int getAgentLocation(int agent_id, size_t timestep) const;
 
 	// high level search

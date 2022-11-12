@@ -126,6 +126,18 @@ bool PP::solve(double _time_limit)
             }
             if (screen > 0) // 1 or 2
 			    printResults();
+
+            #ifndef NDEBUG
+            if (screen > 1)
+            {
+                cout << "\nll exp: ";
+                for (const int& jj: ordered_agents)
+                    cout << search_engines[jj]->getNumExpanded() << ", ";
+                    // cout << paths[jj]->size() - 1 << ",";
+                cout << endl;
+            }
+            #endif
+
             return solution_found;
         }
         else if (solution_cost == -1)
@@ -367,4 +379,34 @@ void PP::printAgentPath(int i) const
     for (const auto & t : *paths[i])
         cout << t.location << "->";
     cout << endl;
+}
+
+bool PP::hasConflicts(int a1, int a2) const
+{
+	int min_path_length = (int) (paths[a1]->size() < paths[a2]->size() ? paths[a1]->size() : paths[a2]->size());
+	for (int timestep = 0; timestep < min_path_length; timestep++)
+	{
+		int loc1 = paths[a1]->at(timestep).location;
+		int loc2 = paths[a2]->at(timestep).location;
+		if (loc1 == loc2 or (timestep < min_path_length - 1 and loc1 == paths[a2]->at(timestep + 1).location
+                             and loc2 == paths[a1]->at(timestep + 1).location)) // vertex or edge conflict
+		{
+            return true;
+		}
+	}
+	if (paths[a1]->size() != paths[a2]->size())
+	{
+		int a1_ = paths[a1]->size() < paths[a2]->size() ? a1 : a2;
+		int a2_ = paths[a1]->size() < paths[a2]->size() ? a2 : a1;
+		int loc1 = paths[a1_]->back().location;
+		for (int timestep = min_path_length; timestep < (int)paths[a2_]->size(); timestep++)
+		{
+			int loc2 = paths[a2_]->at(timestep).location;
+			if (loc1 == loc2)
+			{
+				return true; // target conflict
+			}
+		}
+	}
+    return false; // conflict-free
 }

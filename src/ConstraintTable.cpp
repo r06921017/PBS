@@ -14,7 +14,10 @@ int ConstraintTable::getLastCollisionTimestep(int location) const
     int rst = -1;
     if (!cat.empty())
     {
-        for (auto t = cat[location].size() - 1; t > rst; t--)
+        // #ifndef NDEBUG
+        // cout << "cat[" << location << "].size(): " << cat[location].size() << endl;
+        // #endif
+        for (int t = (int) cat[location].size() - 1; t > rst; t--)
         {
             if (cat[location][t])
                 return t;
@@ -244,4 +247,45 @@ int ConstraintTable::getHoldingTime(int location, int earliest_timestep) const
     }
 
     return rst;
+}
+
+void ConstraintTable::printCT(void) const
+{
+    cout << "\n--- begin CT ---" << endl;
+    cout << "\tmax_timestep: " << ct_max_timestep << endl;
+    map<size_t, list< pair<int, int> > > tmp_ct(ct.begin(), ct.end());
+    for (const auto& _ele_ : tmp_ct)
+    {
+        cout << "\tloc:" << _ele_.first << ", time: ";
+        for (const pair<int,int>& _t_ : _ele_.second)
+        {
+            cout << "[" << _t_.first << "," << _t_.second << "]";
+            if (_t_ != _ele_.second.back())
+                cout << ", ";
+        }
+        cout << endl;
+    }
+    cout << "---  end CT  ---" << endl;
+}
+
+void ConstraintTable::printCAT(void) const
+{
+    cout << "\n--- begin CAT ---" << endl;
+    cout << "\tmax_timestep: " << cat_max_timestep << endl;
+    for (int loc=0; loc < cat.size(); loc++)
+    {
+        if (std::none_of(cat[loc].begin(), cat[loc].end(), [](bool v) { return v; }))
+            continue;  // skip the location if there is no conflicting timestep
+        cout << "\tloc:" << loc << ", time: ";
+        for (int _t_=0; _t_ < cat[loc].size(); _t_++)
+        {
+            if (cat[loc][_t_])
+            {
+                cout << _t_;
+                if (_t_ < cat[loc].size()-1) cout << ", ";
+            }
+        }
+        cout << endl;
+    }
+    cout << "---  end CAT  ---" << endl;
 }

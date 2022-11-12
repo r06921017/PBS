@@ -6,8 +6,9 @@
 #include "SpaceTimeAStar.h"
 
 
-PBS::PBS(const Instance& instance, int screen, bool sipp) :
-    screen(screen), num_of_agents(instance.getDefaultNumberOfAgents())
+PBS::PBS(const Instance& instance, int screen, bool sipp, bool is_ll_opt, bool is_min_conf) :
+    screen(screen), num_of_agents(instance.getDefaultNumberOfAgents()), 
+    is_ll_opt(is_ll_opt), is_min_conf(is_min_conf)
 {
     steady_clock::time_point t = steady_clock::now();
 
@@ -214,8 +215,11 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
 bool PBS::findPathForSingleAgent(PBSNode& node, const set<int>& higher_agents, int a, Path& new_path)
 {
     steady_clock::time_point t = steady_clock::now();
-    // new_path = search_engines[a]->findOptimalPath(higher_agents, paths, a);
-    new_path = search_engines[a]->findPath(higher_agents, paths, a);
+    if (is_ll_opt)
+        new_path = search_engines[a]->findOptimalPath(higher_agents, paths, a);
+    else
+        new_path = search_engines[a]->findPath(higher_agents, paths, a);
+
     runtime_build_CT += search_engines[a]->runtime_build_CT;
     runtime_build_CAT += search_engines[a]->runtime_build_CAT;
     runtime_path_finding += getDuration(t, steady_clock::now());
@@ -270,7 +274,7 @@ void PBS::update(PBSNode* node)
     assert(getSumOfCosts() == node->cost);
 }
 
-int PBS::hasConflicts(int a1, int a2) const
+bool PBS::hasConflicts(int a1, int a2) const
 {
 	int min_path_length = (int) (paths[a1]->size() < paths[a2]->size() ? paths[a1]->size() : paths[a2]->size());
 	for (int timestep = 0; timestep < min_path_length; timestep++)
@@ -331,8 +335,13 @@ void PBS::pushNodes(PBSNode* n1, PBSNode* n2)
 {
     if (n1 != nullptr and n2 != nullptr)
     {
-        // if (n1->cost < n2->cost)
-        if (n1->conflicts.size() < n2->conflicts.size())
+        bool n1_better = false;
+        if (is_min_conf)
+            n1_better = n1->conflicts.size() < n2->conflicts.size();
+        else
+            n1_better = n1->cost < n2->cost;
+
+        if (n1_better)
         {
             pushNode(n2);
             pushNode(n1);
@@ -379,13 +388,6 @@ void PBS::printPaths() const
 			cout << t.location << "->";
 		cout << endl;
 	}
-}
-
-void PBS::printPath(const Path& _path_) const
-{
-    for (const auto & t : _path_)
-        cout << t.location << "->";
-    cout << endl;
 }
 
 void PBS::printPriorityGraph() const
@@ -610,8 +612,12 @@ bool PBS::generateRoot()
     for (int i = 0; i < num_of_agents; i++)
     {
         int _ag_ = init_agents[i];
-        // Path new_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
-        Path new_path = search_engines[_ag_]->findPath(higher_agents, paths, _ag_);
+        Path new_path;
+        if (is_ll_opt)
+            new_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
+        else
+            new_path = search_engines[_ag_]->findPath(higher_agents, paths, _ag_);
+
         if (new_path.empty())
         {
             cout << "No path exists for agent " << i << endl;
@@ -641,8 +647,18 @@ bool PBS::generateRoot()
         cout << "Generate " << *root << endl;
 	pushNode(root);
 	dummy_start = root;
-	if (screen >= 2)  // print start and goals
-		printPaths();
+
+    #ifndef NDEBUG
+	if (screen > 1)  // print start and goals
+    {
+		// printPaths();
+        cout << "\nll exp: ";
+        for (int jj = 0; jj < num_of_agents; jj++)
+            // cout << search_engines[jj]->getNumExpanded() << ", ";
+            cout << paths[jj]->size() - 1 << ",";
+        cout << endl;
+    }
+    #endif
 
 	return true;
 }

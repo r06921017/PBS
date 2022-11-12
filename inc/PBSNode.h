@@ -35,9 +35,15 @@ public:
     PBSNode* parent = nullptr;
 	PBSNode* children[2] = {nullptr, nullptr};
 
+    shared_ptr<vector<vector<uint>>> num_IC = nullptr;  // row: 
+
     PBSNode() = default;
     PBSNode(PBSNode& parent) : cost(parent.cost), depth(parent.depth+1), makespan(parent.makespan), 
-                               conflicts(parent.conflicts), parent(&parent) {}
+                               conflicts(parent.conflicts), parent(&parent)
+    {
+        if (parent.num_IC != nullptr)
+            num_IC = make_shared<vector<vector<uint>>>(*parent.num_IC);
+    }
 	void clear();
 	void printConstraints(int id) const;
     inline int getNumNewPaths() const { return (int) paths.size(); }

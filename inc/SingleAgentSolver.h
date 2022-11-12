@@ -47,6 +47,9 @@ public:
                 {
                     if (n1->h_val == n2->h_val)
                     {
+                        #ifndef NDEBUG
+						return true;   // break ties by true
+						#endif
                         return rand() % 2 == 0;   // break ties randomly
                     }
                     return n1->h_val >= n2->h_val;  // break ties towards smaller h_vals (closer to goal location)
@@ -111,6 +114,9 @@ public:
 
 	list<int> getNextLocations(int curr) const; // including itself and its neighbors
 	list<int> getNeighbors(int curr) const { return instance.getNeighbors(curr); }
+
+	inline uint64_t getNumGenerated(void) {return num_generated;}
+	inline uint64_t getNumExpanded(void) {return num_expanded;}
 
 	// int getStartLocation() const {return instance.start_locations[agent]; }
 	// int getGoalLocation() const {return instance.goal_locations[agent]; }

@@ -269,8 +269,8 @@ class DataProcessor:
 
     def subplot_fig(self, x_index, y_index, in_axs, in_map_idx, in_map, in_result):
         _x_ = in_result[self.config['solvers'][0]['name']][in_map['name']]['x']
-        left_bd = -0.05
-        right_bd = 0.05
+        left_bd = -1 * self.config['set_shift']
+        right_bd = self.config['set_shift']
         plt_rng = (right_bd - left_bd) / len(self.config['solvers'])
         _num_ = range(1, len(_x_)+1)
 
@@ -281,7 +281,7 @@ class DataProcessor:
 
             _val_ = in_result[solver['name']][in_map['name']]['val']
             _ci_  = in_result[solver['name']][in_map['name']]['ci']
-            if self.config['set_shift']:
+            if self.config['set_shift'] > 0:
                 _num_ = [_n_ + plt_rng*s_idx for _n_ in _num_]
 
             if in_map_idx == 0:
@@ -597,6 +597,8 @@ class DataProcessor:
         result = self.get_val(x_index, y_index)
 
         # Plot all the subplots on the figure
+        plt.close('all')
+
         fig, axs = plt.subplots(nrows=self.fig_axs[len(self.config['maps'])][0],
                                 ncols=self.fig_axs[len(self.config['maps'])][1],
                                 figsize=self.fig_size,
@@ -611,43 +613,30 @@ class DataProcessor:
             else:
                 self.subplot_fig(x_index, y_index, axs[frow,fcol], idx, _map_, result)
 
-        fig.tight_layout()
+        # manager = plt.get_current_fig_manager()
+        # manager.full_screen_toggle()
+        # plt.tight_layout(pad=0.05)
+
+        if len(self.config['solvers']) > 4:
+            val_ncol = len(self.config['solvers'])
+            # val_ncol = int(np.ceil(len(self.config['solvers']) / 2))
+
+        else:
+            val_ncol = len(self.config['solvers'])
+        # plt.subplots_adjust(left=val_left, right=val_right, top=val_top, bottom=val_bottom)
+
         if self.config['set_legend']:
-            if y_index == 'succ':
-                # plt.legend(loc="lower left", fontsize=self.text_size)
+            if len(self.config['maps']) > 1:
                 fig.legend(loc="upper center",
                     bbox_to_anchor= (0.5, 1.01),
                     borderpad=0.1,
                     handletextpad=0.1,
                     labelspacing=0.1,
                     columnspacing=0.5,
-                    ncol=len(self.config['solvers']),
+                    ncol=val_ncol,
                     fontsize=self.text_size)
-
-            elif y_index == 'runtime' or y_index == '#low-level generated' or \
-                y_index == '#high-level generated':
-                plt.legend(loc="upper left", fontsize=self.text_size)
-
-            elif y_index == '#low-level expanded':
-                fig.legend(loc="upper center",
-                    bbox_to_anchor= (0.5, 1.01),
-                    borderpad=0.1,
-                    handletextpad=0.1,
-                    labelspacing=0.1,
-                    columnspacing=0.5,
-                    ncol=len(self.config['solvers']),
-                    fontsize=self.text_size)
-
             else:
-                # plt.legend(loc="best", fontsize=self.text_size)
-                fig.legend(loc="upper center",
-                    bbox_to_anchor= (0.5, 1.01),
-                    borderpad=0.1,
-                    handletextpad=0.1,
-                    labelspacing=0.1,
-                    columnspacing=0.5,
-                    ncol=len(self.config['solvers']),
-                    fontsize=self.text_size)
+                plt.legend(loc="lower left", fontsize=self.text_size)
 
         fig_name = ''  # Set the figure name
         for _map_ in self.config['maps']:
@@ -768,7 +757,7 @@ class DataProcessor:
     #     plt.savefig(fig_name)
     #     plt.show()
 
-    def get_ins_from_samples(self, sol_dir:str, sol_names:List[str], 
+    def get_ins_from_samples(self, sol_dir:str, sol_names:List[str],
                              mode:str='min', objective:str='runtime'):
         for _map_ in self.config['maps']:
             for _ag_num_ in _map_['num_of_agents']:
@@ -792,32 +781,23 @@ if __name__ == '__main__':
     # Create data processor
     data_processor = DataProcessor(args.config)
 
-    # # Filtering from random (random) sampled solvers
-    # SOLVER_DIR = 'PBS_rand'
-    # solver_names = ['PBS1_0','PBS1_1','PBS1_2', 'PBS1_3','PBS1_4',
-    #                 'PBS1_5','PBS1_6','PBS1_7','PBS1_8','PBS1_9']
-    # for _m_ in ['min', 'mid', 'max']:
-    #     data_processor.get_ins_from_samples(sol_dir=SOLVER_DIR, sol_names=solver_names, mode=_m_)
-
     # data_processor.get_avg_vals(y_index='#restarts')
     # data_processor.get_avg_vals_all(y_index='succ')
+
     # data_processor.plot_fig(x_index='num', y_index='succ')
     data_processor.plot_fig(x_index='num', y_index='runtime')
     # data_processor.plot_fig(x_index='num', y_index='#low-level search calls')
     # data_processor.plot_fig(x_index='num', y_index='#low-level expanded')
+    # data_processor.plot_fig(x_index='num', y_index='#high-level expanded')
     # data_processor.plot_fig(x_index='num', y_index='#restarts')
     # data_processor.plot_fig(x_index='num', y_index='#backtrack')
-    # data_processor.plot_fig(x_index='num', y_index='max_ma_size')
-    # data_processor.plot_fig(x_index='num', y_index='#high-level generated')
     # data_processor.plot_fig(x_index='num', y_index='#pathfinding')
 
     # data_processor.plot_fig(x_index='ins', y_index='solution cost')
     # data_processor.plot_fig(x_index='ins', y_index='#low-level expanded')
-    # data_processor.plot_op(x_index='ins',y_index1='#low-level expanded',
-    #                        y_index2='#low-level search calls',use_op='div')
-    # data_processor.plot_fig(x_index='ins', y_index='solution cost')
-    # data_processor.plot_fig(x_index='ins', y_index='num_0child')
-
     # data_processor.plot_fig(x_index='ins', y_index='num_total_conf')
     # data_processor.plot_fig(x_index='ins', y_index='num_in_conf')
     # data_processor.plot_fig(x_index='ins', y_index='num_ex_conf')
+
+    # data_processor.plot_op(x_index='ins',y_index1='#low-level expanded',
+    #                        y_index2='#low-level search calls',use_op='div')

@@ -37,7 +37,8 @@ public:
 	// Runs the algorithm until the problem is solved or time is exhausted 
 	virtual bool solve(clock_t _time_limit);
 
-	PBS(const Instance& instance, int screen, bool sipp=true);
+	PBS(const Instance& instance, int screen, bool sipp=true, 
+		bool is_ll_opt=false, bool is_min_conf=false);
 	void clearSearchEngines();
 	~PBS();
 
@@ -54,6 +55,8 @@ protected:
 	int node_limit = MAX_NODES;
     steady_clock::time_point start;
 	int num_of_agents;
+	bool is_ll_opt;
+	bool is_min_conf;
 
     vector<int> init_agents;
 	vector<Path*> paths;
@@ -66,7 +69,7 @@ protected:
 
     virtual string getSolverName() const;
     bool generateChild(int child_id, PBSNode* parent, int low, int high);
-	int hasConflicts(int a1, int a2) const;
+	bool hasConflicts(int a1, int a2) const;
     bool hasConflicts(int a1, const set<int>& agents) const;
 	shared_ptr<Conflict> chooseConflict(const PBSNode &node) const;
     int getSumOfCosts() const;
@@ -102,7 +105,6 @@ protected:
 	void classifyConflicts(PBSNode &parent);
 	void update(PBSNode* node);
 	void printPaths() const;
-	void printPath(const Path& _path_) const;
 
     void topologicalSort(list<int>& stack);
     void topologicalSortUtil(int v, vector<bool> & visited, list<int> & stack);
