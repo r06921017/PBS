@@ -94,7 +94,8 @@ public:
 	uint64_t num_runs = 0;
 
     int num_collisions = -1;
-	clock_t runtime_build_CT = 0; // runtimr of building constraint table
+	clock_t runtime = 0;  // runtime for the search (ignoring the time for building CT and CAT)
+	clock_t runtime_build_CT = 0; // runtime of building constraint table
 	clock_t runtime_build_CAT = 0; // runtime of building conflict avoidance table
 
 	int start_location;
@@ -134,6 +135,9 @@ public:
         num_expanded = 0;
         num_generated = 0;
         num_reopened = 0;
+		runtime = 0;
+		runtime_build_CT = 0;
+		runtime_build_CAT = 0;
     }
 
 protected:
@@ -147,4 +151,3 @@ protected:
 	void compute_heuristics();
 	int get_DH_heuristic(int from, int to) const { return abs(my_heuristic[from] - my_heuristic[to]); }
 };
-

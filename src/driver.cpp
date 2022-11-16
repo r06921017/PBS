@@ -44,8 +44,8 @@ int main(int argc, char** argv)
 		("alpha", po::value<double>()->default_value(1.0), "the ratio of using implicit constraint")
 		("rr", po::value<bool>()->default_value(0), "using random restart for PBS")
 		("rth", po::value<uint64_t>()->default_value(0), "threshold to random restart for PBS")
-		("lh", po::value<bool>()->default_value(0), "using LH heuristic for PP")
-		("sh", po::value<bool>()->default_value(0), "using SH heuristic for PP")
+		("lh", po::value<bool>()->default_value(0), "using LH heuristic for PP/PBS")
+		("sh", po::value<bool>()->default_value(0), "using SH heuristic for PP/PBS")
 		;
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);

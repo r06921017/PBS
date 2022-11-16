@@ -78,15 +78,13 @@ bool PP::solve(double _time_limit)
         while (p != ordered_agents.end())
         {
             int id = *p;
-            steady_clock::time_point t = steady_clock::now();
-
             Path new_path;
             if (is_ll_opt)
                 new_path = search_engines[id]->findOptimalPath(constraint_table);
             else
                 new_path = search_engines[id]->findPath(constraint_table);
 
-            runtime_path_finding += getDuration(t, steady_clock::now());
+            runtime_path_finding += search_engines[id]->runtime;
             runtime_build_CT += search_engines[id]->runtime_build_CT;
             runtime_build_CAT += search_engines[id]->runtime_build_CAT;
             runtime = getDuration(start, steady_clock::now());
@@ -108,7 +106,7 @@ bool PP::solve(double _time_limit)
 
             if (screen > 1)
                 printAgentPath(id);
-            
+
             ++p;
         }
         if (p == ordered_agents.end())

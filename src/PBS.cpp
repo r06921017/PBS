@@ -214,15 +214,13 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
 
 bool PBS::findPathForSingleAgent(PBSNode& node, const set<int>& higher_agents, int a, Path& new_path)
 {
-    steady_clock::time_point t = steady_clock::now();
     if (is_ll_opt)
         new_path = search_engines[a]->findOptimalPath(higher_agents, paths, a);
     else
         new_path = search_engines[a]->findPath(higher_agents, paths, a);
-
+    runtime_path_finding += search_engines[a]->runtime;
     runtime_build_CT += search_engines[a]->runtime_build_CT;
     runtime_build_CAT += search_engines[a]->runtime_build_CAT;
-    runtime_path_finding += getDuration(t, steady_clock::now());
     if (new_path.empty())
         return false;
     // if (isSamePath(*paths[a], new_path))
@@ -617,6 +615,9 @@ bool PBS::generateRoot()
             new_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
         else
             new_path = search_engines[_ag_]->findPath(higher_agents, paths, _ag_);
+        runtime_path_finding += search_engines[_ag_]->runtime;
+        runtime_build_CT += search_engines[_ag_]->runtime_build_CT;
+        runtime_build_CAT += search_engines[_ag_]->runtime_build_CAT;
 
         if (new_path.empty())
         {

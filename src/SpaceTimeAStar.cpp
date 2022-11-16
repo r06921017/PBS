@@ -42,7 +42,7 @@ Path SpaceTimeAStar::findOptimalPath(const set<int>& higher_agents, const vector
 
     // the earliest timestep that the agent can hold its goal location. The length_min is considered here.
     auto holding_time = constraint_table.getHoldingTime(goal_location, constraint_table.length_min);
-    auto static_timestep = constraint_table.getMaxTimestep() + 1; // everything is static after this timestep
+    auto static_timestep = constraint_table.getMaxTimestep(); // everything is static after this timestep
 
     // generate start and add it to the OPEN & FOCAL list
     auto start = new AStarNode(start_location, 0, max(holding_time, my_heuristic[start_location]), nullptr, 0, 0);
@@ -52,6 +52,7 @@ Path SpaceTimeAStar::findOptimalPath(const set<int>& higher_agents, const vector
     start->in_openlist = true;
     allNodes_table.insert(start);
 
+    t = steady_clock::now();
     while (!open_list.empty())
     {
         auto* curr = popNode();
@@ -128,6 +129,7 @@ Path SpaceTimeAStar::findOptimalPath(const set<int>& higher_agents, const vector
         }  // end for loop that generates successors
     }  // end while loop
 
+    runtime = getDuration(t, steady_clock::now());
     releaseNodes();
     return path;
 }
@@ -141,7 +143,7 @@ Path SpaceTimeAStar::findOptimalPath(const ConstraintTable& constraint_table)
 
     // the earliest timestep that the agent can hold its goal location. The length_min is considered here.
     auto holding_time = constraint_table.getHoldingTime(goal_location, constraint_table.length_min);
-    auto static_timestep = constraint_table.getMaxTimestep() + 1; // everything is static after this timestep
+    auto static_timestep = constraint_table.getMaxTimestep(); // everything is static after this timestep
 
     // generate start and add it to the OPEN & FOCAL list
     auto start = new AStarNode(start_location, 0, max(holding_time, my_heuristic[start_location]), nullptr, 0, 0);
@@ -151,6 +153,7 @@ Path SpaceTimeAStar::findOptimalPath(const ConstraintTable& constraint_table)
     start->in_openlist = true;
     allNodes_table.insert(start);
 
+    steady_clock::time_point t = steady_clock::now();
     while (!open_list.empty())
     {
         auto* curr = popNode();
@@ -227,6 +230,7 @@ Path SpaceTimeAStar::findOptimalPath(const ConstraintTable& constraint_table)
         }  // end for loop that generates successors
     }  // end while loop
 
+    runtime = getDuration(t, steady_clock::now());
     releaseNodes();
     return path;
 }
@@ -257,7 +261,7 @@ Path SpaceTimeAStar::findPath(const set<int>& higher_agents, const vector<Path*>
 
     // the earliest timestep that the agent can hold its goal location. The length_min is considered here.
     int holding_time = constraint_table.getHoldingTime(goal_location, constraint_table.length_min);
-    int static_timestep = constraint_table.getMaxTimestep() + 1; // everything is static after this timestep
+    int static_timestep = constraint_table.getMaxTimestep(); // everything is static after this timestep
     int last_target_collision_time = constraint_table.getLastCollisionTimestep(goal_location);
 
     // generate start and add it to the OPEN & FOCAL list
@@ -268,6 +272,7 @@ Path SpaceTimeAStar::findPath(const set<int>& higher_agents, const vector<Path*>
     start->focal_handle = focal_list.push(start); // we only use focal list; no open list is used
     allNodes_table.insert(start);
 
+    t = steady_clock::now();
     while (!focal_list.empty())
     {
         auto* curr = focal_list.top();
@@ -395,6 +400,7 @@ Path SpaceTimeAStar::findPath(const set<int>& higher_agents, const vector<Path*>
         }  // end for loop that generates successors
     }  // end while loop
 
+    runtime = getDuration(t, steady_clock::now());
     releaseNodes();
     return path;
 }
@@ -413,7 +419,7 @@ Path SpaceTimeAStar::findPath(const ConstraintTable& constraint_table)
 
     // the earliest timestep that the agent can hold its goal location. The length_min is considered here.
     int holding_time = constraint_table.getHoldingTime(goal_location, constraint_table.length_min);
-    int static_timestep = constraint_table.getMaxTimestep() + 1; // everything is static after this timestep
+    int static_timestep = constraint_table.getMaxTimestep(); // everything is static after this timestep
     int last_target_collision_time = constraint_table.getLastCollisionTimestep(goal_location);
     // generate start and add it to the OPEN & FOCAL list
     int h = max(max(my_heuristic[start_location], holding_time), last_target_collision_time + 1);
@@ -422,6 +428,8 @@ Path SpaceTimeAStar::findPath(const ConstraintTable& constraint_table)
     start->in_openlist = true;
     start->focal_handle = focal_list.push(start); // we only use focal list; no open list is used
     allNodes_table.insert(start);
+
+    steady_clock::time_point t = steady_clock::now();
     while (!focal_list.empty())
     {
         AStarNode* curr = focal_list.top();
@@ -549,6 +557,7 @@ Path SpaceTimeAStar::findPath(const ConstraintTable& constraint_table)
         }  // end for loop that generates successors
     }  // end while loop
 
+    runtime = getDuration(t, steady_clock::now());
     releaseNodes();
     return path;
 }

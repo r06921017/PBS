@@ -1,29 +1,28 @@
 #include "ConstraintTable.h"
 
-int ConstraintTable::getMaxTimestep() const // everything is static after the max timestep
+int ConstraintTable::getMaxTimestep() const // everything is static after (\geq) the max timestep
 {
-    int rst = max(max(ct_max_timestep, cat_max_timestep), length_min);
+    int rst = max(max(ct_max_timestep, cat_max_timestep), length_min+1);
     if (length_max < MAX_TIMESTEP)
-        rst = max(rst, length_max);
+        rst = max(rst, length_max+1);
     if (!landmarks.empty())
-        rst = max(rst, landmarks.rbegin()->first);
+        rst = max(rst, landmarks.rbegin()->first+1);
     return rst;
 }
 int ConstraintTable::getLastCollisionTimestep(int location) const
 {
-    int rst = -1;
     if (!cat.empty())
     {
         // #ifndef NDEBUG
         // cout << "cat[" << location << "].size(): " << cat[location].size() << endl;
         // #endif
-        for (int t = (int) cat[location].size() - 1; t > rst; t--)
+        for (int t = (int) cat[location].size() - 1; t > -1; t--)
         {
             if (cat[location][t])
                 return t;
         }
     }
-    return rst;
+    return -1;
 }
 void ConstraintTable::insert2CT(size_t from, size_t to, int t_min, int t_max)
 {
@@ -98,7 +97,7 @@ void ConstraintTable::insert2CAT(const Path& path)
             cat[loc].resize(timestep + 1, false);
         cat[loc][timestep] = true;
     }
-    cat_max_timestep = max(cat_max_timestep, (int)path.size() - 1);
+    cat_max_timestep = max(cat_max_timestep, (int)path.size());
 }
 
 
@@ -256,10 +255,19 @@ void ConstraintTable::printCT(void) const
     map<size_t, list< pair<int, int> > > tmp_ct(ct.begin(), ct.end());
     for (const auto& _ele_ : tmp_ct)
     {
-        cout << "\tloc:" << _ele_.first << ", time: ";
+        if (_ele_.first > map_size)
+        {
+            pair<size_t, size_t> cur_edge = getEdge(_ele_.first);
+            cout << "\tloc:" << cur_edge.first << "->" << cur_edge.second;
+        }
+        else
+        {
+            cout << "\tloc:" << _ele_.first;
+        }
+        cout << ", time: ";
         for (const pair<int,int>& _t_ : _ele_.second)
         {
-            cout << "[" << _t_.first << "," << _t_.second << "]";
+            cout << "[" << _t_.first << "," << _t_.second << ")";
             if (_t_ != _ele_.second.back())
                 cout << ", ";
         }
@@ -276,7 +284,18 @@ void ConstraintTable::printCAT(void) const
     {
         if (std::none_of(cat[loc].begin(), cat[loc].end(), [](bool v) { return v; }))
             continue;  // skip the location if there is no conflicting timestep
-        cout << "\tloc:" << loc << ", time: ";
+        
+        if (loc > map_size)
+        {
+            pair<size_t, size_t> cur_edge = getEdge(loc);
+            cout << "\tloc:" << cur_edge.first << "->" << cur_edge.second;
+        }
+        else
+        {
+            cout << "\tloc:" << loc;
+        }
+        cout << ", time: ";
+
         for (int _t_=0; _t_ < cat[loc].size(); _t_++)
         {
             if (cat[loc][_t_])

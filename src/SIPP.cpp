@@ -59,6 +59,7 @@ Path SIPP::findOptimalPath(const set<int>& higher_agents, const vector<Path*>& p
     min_f_val = max(holding_time, (int)start->getFVal());
     pushNodeToOpen(start);
 
+    t = steady_clock::now();
     while (!open_list.empty())
     {
         SIPPNode* curr = open_list.top(); open_list.pop();
@@ -119,6 +120,7 @@ Path SIPP::findOptimalPath(const set<int>& higher_agents, const vector<Path*>& p
                 delete next;
         }
     }  // end while loop
+    runtime = getDuration(t, steady_clock::now());
 
     // no path found
     releaseNodes();
@@ -149,6 +151,7 @@ Path SIPP::findOptimalPath(const ConstraintTable& constraint_table)
     min_f_val = max(holding_time, (int)start->getFVal());
     pushNodeToOpen(start);
 
+    steady_clock::time_point t = steady_clock::now();
     while (!open_list.empty())
     {
         auto curr = open_list.top(); open_list.pop();
@@ -209,6 +212,7 @@ Path SIPP::findOptimalPath(const ConstraintTable& constraint_table)
                 delete next;
         }
     }  // end while loop
+    runtime = getDuration(t, steady_clock::now());
 
     // no path found
     releaseNodes();
@@ -231,10 +235,10 @@ Path SIPP::findPath(const set<int>& higher_agents, const vector<Path*>& paths, i
     t = steady_clock::now();
     constraint_table.insert2CAT(agent, paths);
     runtime_build_CAT = getDuration(t, steady_clock::now());
-    #ifndef NDEBUG
-    constraint_table.printCT();
-    constraint_table.printCAT();
-    #endif
+    // #ifndef NDEBUG
+    // constraint_table.printCT();
+    // constraint_table.printCAT();
+    // #endif
 
     // build reservation table
     ReservationTable reservation_table(constraint_table, goal_location);
@@ -251,6 +255,7 @@ Path SIPP::findPath(const set<int>& higher_agents, const vector<Path*>& paths, i
         get<1>(interval), get<1>(interval), get<2>(interval), get<2>(interval));
     pushNodeToFocal(start);
 
+    t = steady_clock::now();
     while (!focal_list.empty())
     {
         SIPPNode* curr = focal_list.top();
@@ -258,9 +263,9 @@ Path SIPP::findPath(const set<int>& higher_agents, const vector<Path*>& paths, i
         curr->in_openlist = false;
         num_expanded++;
         assert(curr->location >= 0);
-        #ifndef NDEBUG
-        cout << "Expand: " << *curr << endl;
-        #endif
+        // #ifndef NDEBUG
+        // cout << "Expand: " << *curr << endl;
+        // #endif
 
         // check if the popped node is a goal
         if (curr->is_goal)
@@ -275,10 +280,10 @@ Path SIPP::findPath(const set<int>& higher_agents, const vector<Path*>& paths, i
             int future_collisions = constraint_table.getFutureNumOfCollisions(curr->location, curr->timestep);
             if (future_collisions == 0)
             {
-                #ifndef NDEBUG
-                printPath(path);
-                #endif
                 updatePath(curr, path);
+                // #ifndef NDEBUG
+                // printPath(path);
+                // #endif
                 break;
             }
             // generate a goal node
@@ -312,23 +317,23 @@ Path SIPP::findPath(const set<int>& higher_agents, const vector<Path*>& paths, i
                 SIPPNode* next = new SIPPNode(next_location, next_timestep, next_h_val, curr, 
                         next_timestep, next_high_generation, next_high_expansion, 
                         next_v_collision, next_collisions);
-                #ifndef NDEBUG
-                cout << "Move -> Generate: " << *next;
-                #endif
+                // #ifndef NDEBUG
+                // cout << "Move -> generate: " << *next;
+                // #endif
 
                 // try to retrieve it from the hash table
                 if (dominanceCheck(next))
                 {
-                    #ifndef NDEBUG
-                    cout << " add to focal" << endl;
-                    #endif
+                    // #ifndef NDEBUG
+                    // cout << " add to focal" << endl;
+                    // #endif
                     pushNodeToFocal(next);
                 }
                 else
                 {
-                    #ifndef NDEBUG
-                    cout << " remove" << endl;
-                    #endif
+                    // #ifndef NDEBUG
+                    // cout << " remove" << endl;
+                    // #endif
                     delete next;
                 }
             }
@@ -345,27 +350,31 @@ Path SIPP::findPath(const set<int>& higher_agents, const vector<Path*>& paths, i
             SIPPNode* next = new SIPPNode(curr->location, next_timestep, next_h_val, curr, 
                 next_timestep, get<1>(interval), get<1>(interval), get<2>(interval), next_collisions);
             next->wait_at_goal = (curr->location == goal_location);
-            #ifndef NDEBUG
-            cout << "Wait -> Generate " << *next;
-            #endif
+            // #ifndef NDEBUG
+            // cout << "Wait -> generate " << *next;
+            // #endif
 
             if (dominanceCheck(next))
             {
-                #ifndef NDEBUG
-                cout << " add to focal" << endl;
-                #endif
+                // #ifndef NDEBUG
+                // cout << " add to focal" << endl;
+                // #endif
                 pushNodeToFocal(next);
             }
             else
             {
-                #ifndef NDEBUG
-                cout << " remove" << endl;
-                #endif
+                // #ifndef NDEBUG
+                // cout << " remove" << endl;
+                // #endif
                 delete next;
             }
         }
     }  // end while loop
+    runtime = getDuration(t, steady_clock::now());
 
+    // #ifndef NDEBUG
+    // printSearchTree();
+    // #endif
     //if (path.empty())
     //{
     //    printSearchTree();
@@ -382,11 +391,12 @@ Path SIPP::findPath(const ConstraintTable& constraint_table)
     //Path path = findNoCollisionPath(constraint_table);
     //if (!path.empty())
     //    return path;
-    #ifndef NDEBUG
-    constraint_table.printCT();
-    constraint_table.printCAT();
-    #endif
+    // #ifndef NDEBUG
+    // constraint_table.printCT();
+    // constraint_table.printCAT();
+    // #endif
 
+    // build reservation table
     ReservationTable reservation_table(constraint_table, goal_location);
     Path path;
     Interval interval = reservation_table.get_first_safe_interval(start_location);
@@ -395,11 +405,12 @@ Path SIPP::findPath(const ConstraintTable& constraint_table)
     int holding_time = constraint_table.getHoldingTime(goal_location, constraint_table.length_min);
     int last_target_collision_time = constraint_table.getLastCollisionTimestep(goal_location);
     // generate start and add it to the OPEN & FOCAL list
-    int h = max(max(my_heuristic[start_location], holding_time), last_target_collision_time + 1);
+    int h = max(max(my_heuristic[start_location], holding_time), last_target_collision_time+1);
     SIPPNode* start = new SIPPNode(start_location, 0, h, nullptr, 0, 
         get<1>(interval), get<1>(interval), get<2>(interval), get<2>(interval));
     pushNodeToFocal(start);
 
+    steady_clock::time_point t = steady_clock::now();
     while (!focal_list.empty())
     {
         SIPPNode* curr = focal_list.top();
@@ -407,9 +418,9 @@ Path SIPP::findPath(const ConstraintTable& constraint_table)
         curr->in_openlist = false;
         num_expanded++;
         assert(curr->location >= 0);
-        #ifndef NDEBUG
-        cout << "Expand: " << *curr << endl;
-        #endif
+        // #ifndef NDEBUG
+        // cout << "Expand: " << *curr << endl;
+        // #endif
 
         // check if the popped node is a goal
         if (curr->is_goal)
@@ -424,10 +435,10 @@ Path SIPP::findPath(const ConstraintTable& constraint_table)
             int future_collisions = constraint_table.getFutureNumOfCollisions(curr->location, curr->timestep);
             if (future_collisions == 0)
             {
-                #ifndef NDEBUG
-                printPath(path);
-                #endif
                 updatePath(curr, path);
+                // #ifndef NDEBUG
+                // printPath(path);
+                // #endif
                 break;
             }
             // generate a goal node
@@ -461,23 +472,23 @@ Path SIPP::findPath(const ConstraintTable& constraint_table)
                 SIPPNode* next = new SIPPNode(next_location, next_timestep, next_h_val, curr, 
                         next_timestep, next_high_generation, next_high_expansion, 
                         next_v_collision, next_collisions);
-                #ifndef NDEBUG
-                cout << "Move -> generate: " << *next;
-                #endif
+                // #ifndef NDEBUG
+                // cout << "Move -> generate: " << *next;
+                // #endif
 
                 // try to retrieve it from the hash table
                 if (dominanceCheck(next))
                 {
-                    #ifndef NDEBUG
-                    cout << " add to focal" << endl;
-                    #endif
+                    // #ifndef NDEBUG
+                    // cout << " add to focal" << endl;
+                    // #endif
                     pushNodeToFocal(next);
                 }
                 else
                 {
-                    #ifndef NDEBUG
-                    cout << " remove" << endl;
-                    #endif
+                    // #ifndef NDEBUG
+                    // cout << " remove" << endl;
+                    // #endif
                     delete next;
                 }
             }
@@ -500,20 +511,25 @@ Path SIPP::findPath(const ConstraintTable& constraint_table)
 
             if (dominanceCheck(next))
             {
-                #ifndef NDEBUG
-                cout << " add to focal" << endl;
-                #endif
+                // #ifndef NDEBUG
+                // cout << " add to focal" << endl;
+                // #endif
                 pushNodeToFocal(next);
             }
             else
             {
-                #ifndef NDEBUG
-                cout << " remove" << endl;
-                #endif
+                // #ifndef NDEBUG
+                // cout << " remove" << endl;
+                // #endif
                 delete next;
             }
         }
     }  // end while loop
+    runtime = getDuration(t, steady_clock::now());
+
+    // #ifndef NDEBUG
+    // printSearchTree();
+    // #endif
 
     //if (path.empty())
     //{
@@ -643,4 +659,26 @@ std::ostream& operator<<(std::ostream& os, const SIPPNode& node)
     os << node.location << "@" << node.timestep << "(f=" << node.g_val << "+" << node.h_val << ", c=" 
         << node.num_of_conflicts << ")";
     return os;
+}
+
+void SIPP::printSearchTree() const
+{
+    vector<list<SIPPNode*>> nodes;
+    for (const auto & node_list : allNodes_table)
+    {
+        for (const auto & n : node_list.second)
+        {
+            if (nodes.size() <= n->timestep)
+                nodes.resize(n->timestep + 1);
+            nodes[n->timestep].emplace_back(n);
+        }
+    }
+    cout << "Search Tree" << endl;
+    for(int t = 0; t < nodes.size(); t++)
+    {
+        cout << "t=" << t << ":\t";
+        for (const auto & n : nodes[t])
+            cout << *n << "[" << n->timestep << "," << n->high_expansion << "),c=" << n->num_of_conflicts << "\t";
+        cout << endl;
+    }
 }

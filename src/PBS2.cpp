@@ -116,20 +116,19 @@ string PBS2::getSolverName() const
 
 bool PBS2::generateRoot()
 {
-	PBSNode* root = new PBSNode();
-	root->cost = 0;
-	paths = vector<Path*>(num_of_agents, nullptr);
-
     // Order agents initially
     if ((use_LH or use_SH) and num_restart == 0)
     {
         set<int> higher_agents;  // Pseudo agents
         vector<pair<int, size_t>> init_path_size;
-        for (const auto& ag : init_agents)
+        for (const auto& _ag_ : init_agents)
         {
             // Use the individual shortest path to sort priorities
-            Path init_path = search_engines[ag]->findOptimalPath(higher_agents, paths, ag);
-            init_path_size.emplace_back(ag, init_path.size());
+            Path init_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
+            init_path_size.emplace_back(_ag_, init_path.size());
+            runtime_path_finding += search_engines[_ag_]->runtime;
+            runtime_build_CT += search_engines[_ag_]->runtime_build_CT;
+            runtime_build_CAT += search_engines[_ag_]->runtime_build_CAT;
         }
 
         if (use_LH)
@@ -139,24 +138,28 @@ bool PBS2::generateRoot()
 
         init_agents.clear();
         for (const auto& _p_ : init_path_size)
-        {
             init_agents.push_back(_p_.first);
-        }
     }
     else
     {
         std::random_shuffle(init_agents.begin(), init_agents.end());
     }
 
-    // Find a path for individual agents
+    paths = vector<Path*>(num_of_agents, nullptr);
+    PBSNode* root = new PBSNode();
+	root->cost = 0;
     set<int> higher_agents;
-    for (const int& _ag_ : init_agents)
+    for (const int& _ag_ : init_agents)  // Find a path for individual agents
     {
         Path new_path;
         if (is_ll_opt)
             new_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
         else
             new_path = search_engines[_ag_]->findPath(higher_agents, paths, _ag_);
+        runtime_path_finding += search_engines[_ag_]->runtime;
+        runtime_build_CT += search_engines[_ag_]->runtime_build_CT;
+        runtime_build_CAT += search_engines[_ag_]->runtime_build_CAT;
+        
         if (new_path.empty())
         {
             cout << "No path exists for agent " << _ag_ << endl;
@@ -166,6 +169,10 @@ bool PBS2::generateRoot()
         paths[_ag_] = &root->paths.back().second;
         root->makespan = max(root->makespan, new_path.size() - 1);
         root->cost += (int)new_path.size() - 1;
+
+        // #ifndef NDEBUG
+        // printPath(new_path);
+        // #endif
     }
 
     #ifndef NDEBUG
@@ -477,9 +484,6 @@ shared_ptr<Conflict> PBS2::chooseConflict(const PBSNode &node) const
 
 void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topological_orders)
 {
-    vector<int> num_higher_ags(num_of_agents, -1);
-    vector<int> num_lower_ags(num_of_agents, -1);
-
     vector<set<int>> higher_pri_agents(num_of_agents);
     vector<set<int>> lower_pri_agents(num_of_agents);
 
@@ -507,10 +511,11 @@ void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topologi
             getLowerPriorityAgents(ag_it, lower_pri_agents[conf->a2]);
         }
 
-        uint num_ic_a1_a2 = (uint) ((higher_pri_agents[conf->a1].size()+1) * (lower_pri_agents[conf->a2].size()+1));
-        for (const auto& h_ag : higher_pri_agents[conf->a1])
+        uint num_ic_a1_a2 = (uint) ((higher_pri_agents[conf->a1].size()+1) * 
+            (lower_pri_agents[conf->a2].size()+1));
+        for (const int& h_ag : higher_pri_agents[conf->a1])
         {
-            for (const auto& l_ag : lower_pri_agents[conf->a2])
+            for (const int& l_ag : lower_pri_agents[conf->a2])
             {
                 if (priority_graph[l_ag][h_ag])  // Reduce the IC that already exists
                 {
@@ -519,7 +524,7 @@ void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topologi
             }
         }
         node->num_IC->at(conf->a2).at(conf->a1) = num_ic_a1_a2;
-        double val_a1_a2 = ic_ratio * (double)num_ic_a1_a2 + (1.0-ic_ratio) / (double)(lower_pri_agents[conf->a2].size()+1);
+        double val_a1_a2 = (double)num_ic_a1_a2; // / (double)(lower_pri_agents[conf->a2].size()+1);
 
         if (higher_pri_agents[conf->a2].empty())
         {
@@ -537,10 +542,11 @@ void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topologi
             getLowerPriorityAgents(ag_it, lower_pri_agents[conf->a1]);
         }
 
-        uint num_ic_a2_a1 = (uint) (higher_pri_agents[conf->a2].size()+1) * (lower_pri_agents[conf->a1].size()+1);
-        for (const auto& h_ag : higher_pri_agents[conf->a2])
+        uint num_ic_a2_a1 = (uint) (higher_pri_agents[conf->a2].size()+1) * 
+            (lower_pri_agents[conf->a1].size()+1);
+        for (const int& h_ag : higher_pri_agents[conf->a2])
         {
-            for (const auto& l_ag : lower_pri_agents[conf->a1])
+            for (const int& l_ag : lower_pri_agents[conf->a1])
             {
                 if (priority_graph[l_ag][h_ag])  // Reduce the IC that already exists
                 {
@@ -549,7 +555,7 @@ void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topologi
             }
         }
         node->num_IC->at(conf->a1).at(conf->a2) = num_ic_a2_a1;
-        double val_a2_a1 = ic_ratio * (double)num_ic_a2_a1 + (1.0-ic_ratio) / (double)(lower_pri_agents[conf->a1].size()+1);
+        double val_a2_a1 = (double)num_ic_a2_a1; // / (double)(lower_pri_agents[conf->a1].size()+1);
 
         conf->max_num_ic = max(val_a1_a2, val_a2_a1);
         if (val_a1_a2 > val_a2_a1)

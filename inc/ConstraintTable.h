@@ -67,4 +67,5 @@ protected:
     void insertLandmark(size_t loc, int t); // insert a landmark, i.e., the agent has to be at the given location at the given timestep
     list<pair<int, int> > decodeBarrier(int B1, int B2, int t) const;
     inline size_t getEdgeIndex(size_t from, size_t to) const { return (1 + from) * map_size + to; }
+    inline pair<size_t, size_t> getEdge(size_t edge_idx) const {return make_pair<size_t, size_t>(edge_idx / map_size - 1, edge_idx % map_size);}
 };

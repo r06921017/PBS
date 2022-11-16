@@ -784,8 +784,8 @@ if __name__ == '__main__':
     # data_processor.get_avg_vals(y_index='#restarts')
     # data_processor.get_avg_vals_all(y_index='succ')
 
-    # data_processor.plot_fig(x_index='num', y_index='succ')
-    data_processor.plot_fig(x_index='num', y_index='runtime')
+    data_processor.plot_fig(x_index='num', y_index='succ')
+    # data_processor.plot_fig(x_index='num', y_index='runtime')
     # data_processor.plot_fig(x_index='num', y_index='#low-level search calls')
     # data_processor.plot_fig(x_index='num', y_index='#low-level expanded')
     # data_processor.plot_fig(x_index='num', y_index='#high-level expanded')
