@@ -48,11 +48,11 @@ bool PP::solve(double _time_limit)
     {
         ConstraintTable constraint_table(num_of_cols, map_size);
         vector<pair<int, size_t>> init_path_size;
-        for (const auto& ag : ordered_agents)
+        for (const int& _ag_ : ordered_agents)
         {
             // Use the individual shortest path to sort priorities
-            Path init_path = search_engines[ag]->findOptimalPath(constraint_table);
-            init_path_size.emplace_back(ag, init_path.size());
+            int path_size = search_engines[_ag_]->my_heuristic[search_engines[_ag_]->goal_location];
+            init_path_size.emplace_back(_ag_, path_size);
         }
 
         if (use_LH)

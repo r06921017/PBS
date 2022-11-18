@@ -120,12 +120,12 @@ bool PBS2::generateRoot()
     if ((use_LH or use_SH) and num_restart == 0)
     {
         set<int> higher_agents;  // Pseudo agents
-        vector<pair<int, size_t>> init_path_size;
+        vector<pair<int, int>> init_path_size;
         for (const auto& _ag_ : init_agents)
         {
             // Use the individual shortest path to sort priorities
-            Path init_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
-            init_path_size.emplace_back(_ag_, init_path.size());
+            int path_size = search_engines[_ag_]->my_heuristic[search_engines[_ag_]->goal_location];
+            init_path_size.emplace_back(_ag_, path_size);
             runtime_path_finding += search_engines[_ag_]->runtime;
             runtime_build_CT += search_engines[_ag_]->runtime_build_CT;
             runtime_build_CAT += search_engines[_ag_]->runtime_build_CAT;
