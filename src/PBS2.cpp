@@ -158,18 +158,29 @@ bool PBS2::generateRoot()
             new_path = search_engines[_ag_]->findPath(higher_agents, paths, _ag_);
         runtime_path_finding += search_engines[_ag_]->runtime;
         runtime_build_CT += search_engines[_ag_]->runtime_build_CT;
-        runtime_build_CAT += search_engines[_ag_]->runtime_build_CAT;
-        
+        runtime_build_CAT += search_engines[_ag_]->runtime_build_CAT;        
         if (new_path.empty())
         {
             cout << "No path exists for agent " << _ag_ << endl;
             return false;
         }
+
+        #ifndef NDEBUG
+        ofstream root_paths("./tmp_path_pbs2.csv", std::ios::app);
+        if ((new_path[171].location == 33951 and new_path[172].location == 33695) or 
+            (new_path[171].location == 33695 and new_path[172].location == 33951))
+        {
+            root_paths << "Agent " << _ag_ << ",";
+            for (int tmp_t=0; tmp_t < new_path.size()-1; tmp_t++)
+                root_paths << new_path[tmp_t].location << ",";
+            root_paths << new_path.back().location << endl;
+        }
+        #endif
+
         root->paths.emplace_back(_ag_, new_path);
         paths[_ag_] = &root->paths.back().second;
         root->makespan = max(root->makespan, new_path.size() - 1);
         root->cost += (int)new_path.size() - 1;
-
         // #ifndef NDEBUG
         // printPath(new_path);
         // #endif
@@ -178,10 +189,13 @@ bool PBS2::generateRoot()
     #ifndef NDEBUG
     if (screen > 1)
     {
+        cout << "init agents: ";
+        for (const int& ag : init_agents)
+            cout << ag << ",";
+        cout << endl;
         cout << "\nll exp: ";
         for (const int& jj : init_agents)
-            cout << search_engines[jj]->getNumExpanded() << ", ";
-            // cout << paths[jj]->size() - 1 << ",";
+            cout << search_engines[jj]->getNumExpanded() << ",";
         cout << endl;
     }
     #endif

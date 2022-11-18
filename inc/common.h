@@ -22,6 +22,8 @@ using boost::unordered_set;
 using std::vector;
 using std::list;
 using std::set;
+using std::set_intersection;
+using std::inserter;
 using std::map;
 using std::get;
 using std::tuple;
@@ -81,4 +83,24 @@ void printPath(const Path& _path_);
 
 // utility comparator function to pass to the sort() module
 bool sortByLongerPaths(const pair<int, size_t> &a, const pair<int, size_t> &b);
-bool sortByShorterPaths(const pair<int, size_t> &a, const pair<int, size_t> &b); 
+bool sortByShorterPaths(const pair<int, size_t> &a, const pair<int, size_t> &b);
+
+template<typename T>
+set<T> get_intersection(const set<T>& a, const set<T>& b)
+{
+    set<int> rst;
+	set_intersection(a.begin(), a.end(), b.begin(), b.end(), inserter(rst, rst.begin()));
+	return rst;
+}
+
+template<typename T>
+bool has_common_element(const set<T>& a, const set<T>& b)
+{
+    if (a.empty() or b.empty())
+        return false;
+
+	for (const T& aa : a)
+		if (b.count(aa) > 0)
+			return true;
+	return false;
+}

@@ -46,11 +46,13 @@ public:
     void insert2CT(size_t loc, int t_min, int t_max); // insert a vertex constraint to the constraint table
     void insert2CT(size_t from, size_t to, int t_min, int t_max); // insert an edge constraint to the constraint table
     void insert2CAT(int agent, const vector<Path*>& paths); // build the conflict avoidance table using a set of paths
-    void insert2CAT(const Path& path); // insert a path to the collision avoidance table
+    void insert2CAT(const Path& path, int agent); // insert a path to the collision avoidance table
     //int getCATMaxTimestep() const {return cat_max_timestep;}
 
     void printCT(void) const;
+    void saveCT(const string& fileName="./tmp_ct.txt") const;
     void printCAT(void) const;
+    void saveCAT(const string& fileName="./tmp_cat.txt") const;
 
 protected:
     friend class ReservationTable;

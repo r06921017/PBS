@@ -78,10 +78,10 @@ void ConstraintTable::insert2CAT(int agent, const vector<Path*>& paths)
     {
         if (ag == agent || paths[ag] == nullptr)
             continue;
-        insert2CAT(*paths[ag]);
+        insert2CAT(*paths[ag], ag);
     }
 }
-void ConstraintTable::insert2CAT(const Path& path)
+void ConstraintTable::insert2CAT(const Path& path, int agent)
 {
     if (cat.empty())
     {
@@ -189,7 +189,7 @@ int ConstraintTable::getNumOfConflictsForStep(size_t curr_id, size_t next_id, in
             cat[next_id][next_timestep - 1]and cat[curr_id][next_timestep])
             rst++;
         if (cat_goals[next_id] < next_timestep)
-            rst++;
+            rst++;  // target conflict
     }
     return rst;
 }
@@ -203,7 +203,7 @@ bool ConstraintTable::hasConflictForStep(size_t curr_id, size_t next_id, int nex
             cat[next_id][next_timestep - 1]and cat[curr_id][next_timestep])
             return true;
         if (cat_goals[next_id] < next_timestep)
-            return true;
+            return true; // target conflict
     }
     return false;
 }
@@ -276,6 +276,36 @@ void ConstraintTable::printCT(void) const
     cout << "---  end CT  ---" << endl;
 }
 
+void ConstraintTable::saveCT(const string &fileName) const
+{
+    ofstream stats(fileName, std::ios::app);
+    stats << "--- begin CT ---" << endl;
+    stats << "max_timestep: " << ct_max_timestep << endl;
+    map<size_t, list< pair<int, int> > > tmp_ct(ct.begin(), ct.end());
+    for (const auto& _ele_ : tmp_ct)
+    {
+        if (_ele_.first > map_size)
+        {
+            pair<size_t, size_t> cur_edge = getEdge(_ele_.first);
+            stats << "\tloc:" << cur_edge.first << "->" << cur_edge.second;
+        }
+        else
+        {
+            stats << "\tloc:" << _ele_.first;
+        }
+        stats << ", time: ";
+        for (const pair<int,int>& _t_ : _ele_.second)
+        {
+            stats << "[" << _t_.first << "," << _t_.second << ")";
+            if (_t_ != _ele_.second.back())
+                stats << ", ";
+        }
+        stats << endl;
+    }
+    stats << "---  end CT  ---" << endl;
+	stats.close();
+}
+
 void ConstraintTable::printCAT(void) const
 {
     cout << "\n--- begin CAT ---" << endl;
@@ -307,4 +337,38 @@ void ConstraintTable::printCAT(void) const
         cout << endl;
     }
     cout << "---  end CAT  ---" << endl;
+}
+
+void ConstraintTable::saveCAT(const string& fileName) const
+{
+    ofstream stats(fileName, std::ios::app);
+    stats << "--- begin CAT ---" << endl;
+    stats << "max_timestep," << cat_max_timestep << endl;
+    for (int loc=0; loc < cat.size(); loc++)
+    {
+        if (std::none_of(cat[loc].begin(), cat[loc].end(), [](bool v) { return v; }))
+            continue;  // skip the location if there is no conflicting timestep
+
+        if (loc > map_size)
+        {
+            pair<size_t, size_t> cur_edge = getEdge(loc);
+            stats << "\tloc:" << cur_edge.first << "->" << cur_edge.second;
+        }
+        else
+        {
+            stats << "\tloc:" << loc;
+        }
+        stats << ", time: ";
+
+        for (int _t_=0; _t_ < cat[loc].size(); _t_++)
+        {
+            if (cat[loc][_t_])
+            {
+                stats << _t_;
+                if (_t_ < cat[loc].size()-1) stats << ", ";
+            }
+        }
+        stats << endl;
+    }
+    stats << "---  end CAT  ---" << endl;
 }

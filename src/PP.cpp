@@ -128,10 +128,13 @@ bool PP::solve(double _time_limit)
             #ifndef NDEBUG
             if (screen > 1)
             {
-                cout << "\nll exp: ";
+                cout << "init agents,";
+                for (const int& ag : ordered_agents)
+                    cout << ag << ",";
+                cout << endl;
+                cout << "ll exp,";
                 for (const int& jj: ordered_agents)
-                    cout << search_engines[jj]->getNumExpanded() << ", ";
-                    // cout << paths[jj]->size() - 1 << ",";
+                    cout << search_engines[jj]->getNumExpanded() << ",";
                 cout << endl;
             }
             #endif

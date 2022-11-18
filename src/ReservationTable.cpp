@@ -215,7 +215,7 @@ void ReservationTable::updateSIT(int location)
         }
     }
 
-    // soft constraints
+    // soft vertex constraints
     if (!constraint_table.cat.empty())
     {
         for (auto t = 0; t < constraint_table.cat[location].size(); t++)

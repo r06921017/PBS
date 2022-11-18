@@ -63,6 +63,9 @@ std::ostream& operator<<(std::ostream& os, const SIPPNode& node);
 class SIPP: public SingleAgentSolver
 {
 public:
+    SIPP(const Instance& instance, int agent): SingleAgentSolver(instance, agent) {}
+    string getName() const { return "SIPP"; }
+
     Path findOptimalPath(const set<int>& higher_agents, const vector<Path*>& paths, int agent) override;
     Path findOptimalPath(const ConstraintTable& constraint_table) override;
     
@@ -70,10 +73,7 @@ public:
     Path findPath(const set<int>& higher_agents, const vector<Path*>& paths, int agent) override;
     Path findPath(const ConstraintTable& constraint_table) override;
 
-    string getName() const { return "SIPP"; }
-
-    SIPP(const Instance& instance, int agent):
-            SingleAgentSolver(instance, agent) {}
+    void saveSearchTree(const string& fileName="./tmp_search_tree.txt") const;
 
 private:
     // define typedefs and handles for heap
