@@ -8,9 +8,8 @@ import argparse
 from typing import List, Tuple, Dict
 from enum import Enum
 from tkinter import Tk, Canvas, Label, mainloop
-import yaml
-import numpy as np
 import time
+import yaml
 
 COLORS: List[str] = ["deepskyblue", "orange", "green", "purple", "pink",
                      "yellow", "blue", "violet", "tomato", "yellowgreen",
@@ -108,10 +107,10 @@ class MAPFRenderer:
         for rid, _cur_row_ in enumerate(self.env_map):
             for cid, _cur_ele_ in enumerate(_cur_row_):
                 if _cur_ele_ is False:
-                    self.canvas.create_rectangle(rid * self.tile_size,
-                                                 cid * self.tile_size,
-                                                 (rid+1)*self.tile_size,
+                    self.canvas.create_rectangle(cid * self.tile_size,
+                                                 rid * self.tile_size,
                                                  (cid+1)*self.tile_size,
+                                                 (rid+1)*self.tile_size,
                                                  fill="black")
 
 
@@ -167,9 +166,9 @@ class MAPFRenderer:
             ag_counter:int = 0
             for line in fin.readlines():
                 line_seg = line.split('\t')
-                self.start_loc[ag_counter] = (int(line_seg[5]), int(line_seg[4]))
-                self.cur_loc[ag_counter] = (int(line_seg[5]), int(line_seg[4]))
-                self.goal_loc[ag_counter] = (int(line_seg[7]), int(line_seg[6]))
+                self.start_loc[ag_counter] = (int(line_seg[4]), int(line_seg[5]))
+                self.cur_loc[ag_counter] = (int(line_seg[4]), int(line_seg[5]))
+                self.goal_loc[ag_counter] = (int(line_seg[6]), int(line_seg[7]))
 
                 ag_counter += 1
                 if ag_counter == self.num_of_agents:
@@ -191,8 +190,8 @@ class MAPFRenderer:
                 for cur_loc in line.split(" ")[-1].split("->"):
                     if cur_loc == "\n":
                         continue
-                    cur_x = int(cur_loc.split(",")[0].split("(")[1])
-                    cur_y = int(cur_loc.split(",")[1].split(")")[0])
+                    cur_x = int(cur_loc.split(",")[1].split(")")[0])
+                    cur_y = int(cur_loc.split(",")[0].split("(")[1])
                     self.paths[ag_idx].append((cur_x, cur_y))
                 ag_counter += 1
             self.num_of_agents = ag_counter
