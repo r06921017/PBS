@@ -78,10 +78,10 @@ void ConstraintTable::insert2CAT(int agent, const vector<Path*>& paths)
     {
         if (ag == agent || paths[ag] == nullptr)
             continue;
-        insert2CAT(*paths[ag], ag);
+        insert2CAT(*paths[ag]);
     }
 }
-void ConstraintTable::insert2CAT(const Path& path, int agent)
+void ConstraintTable::insert2CAT(const Path& path)
 {
     if (cat.empty())
     {
