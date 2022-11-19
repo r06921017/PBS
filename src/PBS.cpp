@@ -6,15 +6,12 @@
 #include "SpaceTimeAStar.h"
 
 
-PBS::PBS(const Instance& instance, int screen, bool sipp, bool is_ll_opt, bool is_min_conf) :
-    screen(screen), num_of_agents(instance.getDefaultNumberOfAgents()), 
-    is_ll_opt(is_ll_opt), is_min_conf(is_min_conf)
+PBS::PBS(const Instance& instance, int screen, bool sipp, bool is_ll_opt,
+    bool use_LH, bool use_SH, bool use_rr, uint64_t rr_th, bool is_min_conf) :
+    screen(screen), num_of_agents(instance.getDefaultNumberOfAgents()), is_ll_opt(is_ll_opt),
+    use_LH(use_LH), use_SH(use_SH), use_rr(use_rr), rr_th(rr_th), is_min_conf(is_min_conf)
 {
     steady_clock::time_point t = steady_clock::now();
-
-    init_agents = vector<int>(num_of_agents);
-    iota(init_agents.begin(), init_agents.end(), 0);
-
     search_engines.resize(num_of_agents);
     for (int i = 0; i < num_of_agents; i++)
     {
@@ -28,6 +25,33 @@ PBS::PBS(const Instance& instance, int screen, bool sipp, bool is_ll_opt, bool i
     if (screen >= 2) // print start and goals
     {
         instance.printAgents();
+    }
+
+    // Order agents initially
+    init_agents = vector<int>(num_of_agents);
+    iota(init_agents.begin(), init_agents.end(), 0);
+    if (use_LH or use_SH)
+    {
+        vector<pair<int, int>> init_path_size;
+        for (const auto& _ag_ : init_agents)
+        {
+            // Use the individual shortest path to sort priorities
+            int path_size = search_engines[_ag_]->my_heuristic[search_engines[_ag_]->goal_location];
+            init_path_size.emplace_back(_ag_, path_size);
+        }
+
+        if (use_LH)
+            sort(init_path_size.begin(), init_path_size.end(), sortByLongerPaths);
+        else if (use_SH)
+            sort(init_path_size.begin(), init_path_size.end(), sortByShorterPaths);
+
+        init_agents.clear();
+        for (const auto& _p_ : init_path_size)
+            init_agents.push_back(_p_.first);
+    }
+    else
+    {
+        std::random_shuffle(init_agents.begin(), init_agents.end());
     }
 }
 
@@ -44,30 +68,43 @@ bool PBS::solve(clock_t _time_limit)
     }
     start = steady_clock::now();  // set timer
 
-    generateRoot();
-
-    while (!open_list.empty())
+    while (solution_cost == -2)
     {
-        auto curr = selectNode();
+        generateRoot();
 
-        if (terminate(curr)) break;
+        while (!open_list.empty())
+        {
+            auto curr = selectNode();
 
-        curr->conflict = chooseConflict(*curr);
+            if (terminate(curr)) break;
 
-        if (screen > 1)
-            cout << "	Expand " << *curr << "	on " << *(curr->conflict) << endl;
+            curr->conflict = chooseConflict(*curr);
 
-        assert(!hasHigherPriority(curr->conflict->a1, curr->conflict->a2) and
-               !hasHigherPriority(curr->conflict->a2, curr->conflict->a1) );
-        steady_clock::time_point t1 = steady_clock::now();
-        vector<Path*> copy(paths);
-        generateChild(0, curr, curr->conflict->a1, curr->conflict->a2);
-        paths = copy;
-        generateChild(1, curr, curr->conflict->a2, curr->conflict->a1);
-        runtime_generate_child += getDuration(t1, steady_clock::now());
-        pushNodes(curr->children[0], curr->children[1]);
-        curr->clear();
-    }  // end of while loop
+            if (screen > 1)
+                cout << "	Expand " << *curr << "	on " << *(curr->conflict) << endl;
+
+            assert(!hasHigherPriority(curr->conflict->a1, curr->conflict->a2) and
+                !hasHigherPriority(curr->conflict->a2, curr->conflict->a1) );
+            steady_clock::time_point t1 = steady_clock::now();
+            vector<Path*> copy(paths);
+            generateChild(0, curr, curr->conflict->a1, curr->conflict->a2);
+            paths = copy;
+            generateChild(1, curr, curr->conflict->a2, curr->conflict->a1);
+            runtime_generate_child += getDuration(t1, steady_clock::now());
+            pushNodes(curr->children[0], curr->children[1]);
+
+            if (num_backtrack > rr_th)
+            {
+                clear();
+                stack<PBSNode*>().swap(open_list);  // clear the open_list
+                num_restart ++;
+                local_num_backtrack = 0;
+                break;
+            }
+            curr->clear();
+        }  // end of while loop
+    }
+
     return solution_found;
 }
 
@@ -361,6 +398,7 @@ void PBS::pushNodes(PBSNode* n1, PBSNode* n2)
     else
     {
         num_backtrack++;
+        local_num_backtrack++;
     }
 }
 
@@ -601,15 +639,13 @@ bool PBS::terminate(PBSNode* curr)
 
 bool PBS::generateRoot()
 {
+    paths = vector<Path*>(num_of_agents, nullptr);
 	PBSNode* root = new PBSNode();
 	root->cost = 0;
-    paths = vector<Path*>(num_of_agents, nullptr);
-    std::random_shuffle(init_agents.begin(), init_agents.end());
-
+	root->depth = 0;
     set<int> higher_agents;
-    for (int i = 0; i < num_of_agents; i++)
+    for (const int& _ag_ : init_agents)  // Find a path for individual agents
     {
-        int _ag_ = init_agents[i];
         Path new_path;
         if (is_ll_opt)
             new_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
@@ -621,7 +657,7 @@ bool PBS::generateRoot()
 
         if (new_path.empty())
         {
-            cout << "No path exists for agent " << i << endl;
+            cout << "No path exists for agent " << _ag_ << endl;
             return false;
         }
         root->paths.emplace_back(_ag_, new_path);
@@ -629,36 +665,32 @@ bool PBS::generateRoot()
         root->makespan = max(root->makespan, new_path.size() - 1);
         root->cost += (int)new_path.size() - 1;
     }
+
+    // Find all conflicts among paths
     steady_clock::time_point t = steady_clock::now();
-	root->depth = 0;
     for (int a1 = 0; a1 < num_of_agents; a1++)
     {
         for (int a2 = a1 + 1; a2 < num_of_agents; a2++)
         {
             if(hasConflicts(a1, a2))
             {
-                root->conflicts.emplace_back(new Conflict(a1, a2));
+                if (paths[a1]->size() < paths[a2]->size())
+                    root->conflicts.emplace_back(new Conflict(a1, a2));
+                else
+                    root->conflicts.emplace_back(new Conflict(a2, a1));
             }
         }
     }
     runtime_detect_conflicts += getDuration(t, steady_clock::now());
     num_HL_generated++;
     root->time_generated = num_HL_generated;
-    if (screen > 1)
-        cout << "Generate " << *root << endl;
 	pushNode(root);
 	dummy_start = root;
-
     #ifndef NDEBUG
-	if (screen > 1)  // print start and goals
-    {
-		// printPaths();
-        cout << "\nll exp: ";
-        for (int jj = 0; jj < num_of_agents; jj++)
-            // cout << search_engines[jj]->getNumExpanded() << ", ";
-            cout << paths[jj]->size() - 1 << ",";
-        cout << endl;
-    }
+    if (screen > 1)
+        cout << "Generate " << *root << endl;
+    if (screen >= 2) // print start and goals
+		printPaths();
     #endif
 
 	return true;

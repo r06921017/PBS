@@ -13,10 +13,6 @@ PP::PP(const Instance& instance, int screen, bool sipp, bool is_ll_opt, bool use
 {
     steady_clock::time_point t = steady_clock::now();
 
-    paths = vector<Path*>(num_of_agents, nullptr);
-    ordered_agents = vector<int>(num_of_agents);
-    iota(ordered_agents.begin(), ordered_agents.end(), 0);
-
     search_engines.resize(num_of_agents);
     for (int i = 0; i < num_of_agents; i++)
     {
@@ -25,25 +21,10 @@ PP::PP(const Instance& instance, int screen, bool sipp, bool is_ll_opt, bool use
         else
             search_engines[i] = new SpaceTimeAStar(instance, i);
     }
-    runtime_preprocessing = getDuration(t, steady_clock::now());
 
-    if (screen > 1)  // print start and goals
-        instance.printAgents();
-}
-
-bool PP::solve(double _time_limit)
-{
-    this->time_limit = _time_limit;
-
-    if (screen > 0)
-    {
-        string name = getSolverName();
-        name.resize(35, ' ');
-        cout << name << ": ";
-    }
-
-    start = steady_clock::now();  // set timer
-
+    paths = vector<Path*>(num_of_agents, nullptr);
+    ordered_agents = vector<int>(num_of_agents);
+    iota(ordered_agents.begin(), ordered_agents.end(), 0);
     if (use_LH || use_SH)
     {
         ConstraintTable constraint_table(num_of_cols, map_size);
@@ -70,7 +51,25 @@ bool PP::solve(double _time_limit)
     {
         std::random_shuffle(ordered_agents.begin(), ordered_agents.end());
     }
-    
+    runtime_preprocessing = getDuration(t, steady_clock::now());
+
+    #ifndef NDEBUG
+    if (screen > 1)  // print start and goals
+        instance.printAgents();
+    #endif
+
+    if (screen > 0)
+    {
+        string name = getSolverName();
+        name.resize(35, ' ');
+        cout << name << ": ";
+    }
+}
+
+bool PP::solve(double _time_limit)
+{
+    this->time_limit = _time_limit;
+    start = steady_clock::now();  // set timer
     while (runtime < time_limit * CLOCKS_PER_SEC)
     {
         ConstraintTable constraint_table(num_of_cols, map_size);

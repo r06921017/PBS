@@ -48,9 +48,9 @@ public:
                     if (n1->h_val == n2->h_val)
                     {
                         // #ifndef NDEBUG
-						return true;   // break ties by true
+						// return true;   // break ties by true
 						// #endif
-                        // return rand() % 2 == 0;   // break ties randomly
+                        return rand() % 2 == 0;   // break ties randomly
                     }
                     return n1->h_val >= n2->h_val;  // break ties towards smaller h_vals (closer to goal location)
                 }

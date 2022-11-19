@@ -20,6 +20,7 @@ public:
 	uint64_t num_HL_expanded = 0;
 	uint64_t num_HL_generated = 0;
 	uint64_t num_backtrack = 0;
+    uint64_t local_num_backtrack = 0;
 	uint64_t num_restart = 0;
 
 	PBSNode* dummy_start = nullptr;
@@ -28,19 +29,18 @@ public:
 	bool solution_found = false;
 	int solution_cost = -2;
 
-	/////////////////////////////////////////////////////////////////////////////////////////
-	// set params
-	void setConflictSelectionRule(conflict_selection c) { conflict_seletion_rule = c;}
-	void setNodeLimit(int n) { node_limit = n; }
+	PBS(const Instance& instance, int screen, bool sipp=true, bool is_ll_opt=false,
+		bool use_LH=false, bool use_SH=false, bool use_rr=false, uint64_t rr_th=0, 
+		bool is_min_conf=false);
+	~PBS();
 
-	////////////////////////////////////////////////////////////////////////////////////////////
+	// set params
+	inline void setConflictSelectionRule(conflict_selection c) { conflict_seletion_rule = c;}
+	inline void setNodeLimit(int n) { node_limit = n; }
+
 	// Runs the algorithm until the problem is solved or time is exhausted 
 	virtual bool solve(clock_t _time_limit);
-
-	PBS(const Instance& instance, int screen, bool sipp=true, 
-		bool is_ll_opt=false, bool is_min_conf=false);
 	void clearSearchEngines();
-	~PBS();
 
 	// Save results
 	void saveResults(const string &fileName, const string &instanceName) const;
@@ -49,13 +49,16 @@ public:
 	void clear(); // used for rapid random  restart
 
 protected:
-
     int screen;
 	clock_t time_limit;
 	int node_limit = MAX_NODES;
     steady_clock::time_point start;
 	int num_of_agents;
 	bool is_ll_opt;
+	bool use_LH;
+    bool use_SH;
+	bool use_rr;
+    uint64_t rr_th;
 	bool is_min_conf;
 
     vector<int> init_agents;
@@ -68,26 +71,10 @@ protected:
     vector<vector<bool>> priority_graph; // [i][j] = true indicates that i is lower than j
 
     virtual string getSolverName() const;
-    bool generateChild(int child_id, PBSNode* parent, int low, int high);
-	bool hasConflicts(int a1, int a2) const;
-    bool hasConflicts(int a1, const set<int>& agents) const;
-	shared_ptr<Conflict> chooseConflict(const PBSNode &node) const;
-    int getSumOfCosts() const;
-	inline void releaseNodes();
-
-	// print and save
-	void printResults() const;
-	static void printConflicts(const PBSNode &curr, int num=INT_MAX);
-    void printPriorityGraph() const;
-
-	bool validateSolution() const;
 	inline int getAgentLocation(int agent_id, size_t timestep) const;
-
-	bool terminate(PBSNode* curr); // check the stop condition and return true if it meets
-
+    int getSumOfCosts() const;
     void getHigherPriorityAgents(const list<int>::reverse_iterator & p1, set<int>& higher_agents);
     void getLowerPriorityAgents(const list<int>::iterator & p1, set<int>& lower_agents);
-    bool hasHigherPriority(int low, int high) const; // return true if agent low is lower than agent high
 
 	// node operators
 	inline void pushNode(PBSNode* node)
@@ -99,14 +86,27 @@ protected:
     void pushNodes(PBSNode* n1, PBSNode* n2);
 	PBSNode* selectNode();
 
-	// high level search
+	// high-level search
 	bool generateRoot();
-    bool findPathForSingleAgent(PBSNode& node, const set<int>& higher_agents, int a, Path& new_path);
-	void classifyConflicts(PBSNode &parent);
+    bool generateChild(int child_id, PBSNode* parent, int low, int high);
+	bool hasConflicts(int a1, int a2) const;
+    bool hasConflicts(int a1, const set<int>& agents) const;
+	shared_ptr<Conflict> chooseConflict(const PBSNode &node) const;
+	inline void releaseNodes();
+
+	bool findPathForSingleAgent(PBSNode& node, const set<int>& higher_agents, int a, Path& new_path);
+    bool hasHigherPriority(int low, int high) const; // return true if agent low is lower than agent high
 	void update(PBSNode* node);
-	void printPaths() const;
 
     void topologicalSort(list<int>& stack);
     void topologicalSortUtil(int v, vector<bool> & visited, list<int> & stack);
 	bool checkCycle(const vector<int>& topological_orders);
+	bool validateSolution() const;
+	bool terminate(PBSNode* curr); // check the stop condition and return true if it meets
+
+	// print and save
+	void printResults() const;
+	static void printConflicts(const PBSNode &curr, int num=INT_MAX);
+    void printPriorityGraph() const;
+	void printPaths() const;
 };

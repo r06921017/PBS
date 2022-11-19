@@ -69,8 +69,9 @@ int main(int argc, char** argv)
 
 	if (vm["solver"].as<string>() == "PBS")
 	{
-		PBS pbs(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>(), 
-			vm["opt"].as<bool>(), vm["greedy"].as<bool>());
+		PBS pbs(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>(), vm["opt"].as<bool>(),
+			vm["lh"].as<bool>(), vm["sh"].as<bool>(), vm["rr"].as<bool>(), vm["rth"].as<uint64_t>(),
+			vm["greedy"].as<bool>());
 		// run
 		pbs.solve(vm["cutoffTime"].as<clock_t>());
 		if (vm.count("output"))

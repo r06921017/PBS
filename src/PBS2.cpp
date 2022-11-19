@@ -6,15 +6,14 @@
 #include "SIPP.h"
 #include "SpaceTimeAStar.h"
 
-PBS2::PBS2(const Instance& instance, int screen, bool sipp, bool is_ll_opt,
-    bool use_tr, bool use_ic, bool use_rr, uint64_t rr_th, double ic_ratio, bool use_LH, bool use_SH): 
-    PBS(instance, screen, sipp, is_ll_opt), use_tr(use_tr), use_ic(use_ic), use_rr(use_rr),
-    rr_th(rr_th), ic_ratio(ic_ratio), use_LH(use_LH), use_SH(use_SH) {}
+PBS2::PBS2(const Instance& instance, int screen, bool sipp, bool is_ll_opt, bool use_tr,
+    bool use_ic, bool use_rr, uint64_t rr_th, double ic_ratio, bool use_LH, bool use_SH): 
+    PBS(instance, screen, sipp, is_ll_opt, use_LH, use_SH, use_rr, rr_th), 
+    use_tr(use_tr), use_ic(use_ic), ic_ratio(ic_ratio) {}
 
 bool PBS2::solve(clock_t time_limit)
 {
     this->time_limit = time_limit;
-    size_t local_num_backtrack = 0;
 
     if (screen > 0) // 1 or 2
     {
@@ -116,38 +115,10 @@ string PBS2::getSolverName() const
 
 bool PBS2::generateRoot()
 {
-    // Order agents initially
-    if ((use_LH or use_SH) and num_restart == 0)
-    {
-        set<int> higher_agents;  // Pseudo agents
-        vector<pair<int, int>> init_path_size;
-        for (const auto& _ag_ : init_agents)
-        {
-            // Use the individual shortest path to sort priorities
-            int path_size = search_engines[_ag_]->my_heuristic[search_engines[_ag_]->goal_location];
-            init_path_size.emplace_back(_ag_, path_size);
-            runtime_path_finding += search_engines[_ag_]->runtime;
-            runtime_build_CT += search_engines[_ag_]->runtime_build_CT;
-            runtime_build_CAT += search_engines[_ag_]->runtime_build_CAT;
-        }
-
-        if (use_LH)
-            sort(init_path_size.begin(), init_path_size.end(), sortByLongerPaths);
-        else if (use_SH)
-            sort(init_path_size.begin(), init_path_size.end(), sortByShorterPaths);
-
-        init_agents.clear();
-        for (const auto& _p_ : init_path_size)
-            init_agents.push_back(_p_.first);
-    }
-    else
-    {
-        std::random_shuffle(init_agents.begin(), init_agents.end());
-    }
-
     paths = vector<Path*>(num_of_agents, nullptr);
     PBSNode* root = new PBSNode();
 	root->cost = 0;
+	root->depth = 0;
     set<int> higher_agents;
     for (const int& _ag_ : init_agents)  // Find a path for individual agents
     {
@@ -165,44 +136,14 @@ bool PBS2::generateRoot()
             return false;
         }
 
-        #ifndef NDEBUG
-        ofstream root_paths("./tmp_path_pbs2.csv", std::ios::app);
-        if ((new_path[171].location == 33951 and new_path[172].location == 33695) or 
-            (new_path[171].location == 33695 and new_path[172].location == 33951))
-        {
-            root_paths << "Agent " << _ag_ << ",";
-            for (int tmp_t=0; tmp_t < new_path.size()-1; tmp_t++)
-                root_paths << new_path[tmp_t].location << ",";
-            root_paths << new_path.back().location << endl;
-        }
-        #endif
-
         root->paths.emplace_back(_ag_, new_path);
         paths[_ag_] = &root->paths.back().second;
         root->makespan = max(root->makespan, new_path.size() - 1);
         root->cost += (int)new_path.size() - 1;
-        // #ifndef NDEBUG
-        // printPath(new_path);
-        // #endif
     }
-
-    #ifndef NDEBUG
-    if (screen > 1)
-    {
-        cout << "init agents: ";
-        for (const int& ag : init_agents)
-            cout << ag << ",";
-        cout << endl;
-        cout << "\nll exp: ";
-        for (const int& jj : init_agents)
-            cout << search_engines[jj]->getNumExpanded() << ",";
-        cout << endl;
-    }
-    #endif
 
     // Find all conflicts among paths
     steady_clock::time_point t = steady_clock::now();
-	root->depth = 0;
     for (int a1 = 0; a1 < num_of_agents; a1++)
     {
         for (int a2 = a1 + 1; a2 < num_of_agents; a2++)
@@ -247,14 +188,16 @@ bool PBS2::generateRoot()
 
     num_HL_generated++;
     root->time_generated = num_HL_generated;
+    pushNode(root);
+	dummy_start = root;
+    #ifndef NDEBUG
     if (screen > 1)
         cout << "Generate " << *root << endl;
-	pushNode(root);
-	dummy_start = root;
 	if (screen >= 2) // print start and goals
 		printPaths();
+    #endif
 
-	return true;
+    return true;
 }
 
 bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
@@ -509,6 +452,7 @@ void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topologi
     {
         if (conf->priority == 2) continue;
 
+        // Compute the additional implicit constraints for priority a1 -> a2
         if (higher_pri_agents[conf->a1].empty())
         {
             ag_rit = ordered_agents.rbegin();
@@ -538,8 +482,10 @@ void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topologi
             }
         }
         node->num_IC->at(conf->a2).at(conf->a1) = num_ic_a1_a2;
-        double val_a1_a2 = (double)num_ic_a1_a2; // / (double)(lower_pri_agents[conf->a2].size()+1);
+        double val_a1_a2 = ic_ratio * (double)num_ic_a1_a2 + 
+            (1.0-ic_ratio) / (double)(lower_pri_agents[conf->a2].size()+1);
 
+        // Compute the additional implicit constraints for priority a2 -> a1
         if (higher_pri_agents[conf->a2].empty())
         {
             ag_rit = ordered_agents.rbegin();
@@ -569,8 +515,10 @@ void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topologi
             }
         }
         node->num_IC->at(conf->a1).at(conf->a2) = num_ic_a2_a1;
-        double val_a2_a1 = (double)num_ic_a2_a1; // / (double)(lower_pri_agents[conf->a1].size()+1);
+        double val_a2_a1 = ic_ratio * (double)num_ic_a2_a1 +
+            (1.0-ic_ratio) / (double)(lower_pri_agents[conf->a1].size()+1);
 
+        // Assign the maximum to the current conflict
         conf->max_num_ic = max(val_a1_a2, val_a2_a1);
         if (val_a1_a2 > val_a2_a1)
             std::swap(conf->a1, conf->a2);
