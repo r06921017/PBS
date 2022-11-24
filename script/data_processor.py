@@ -293,7 +293,8 @@ class DataProcessor:
                                     markeredgewidth=self.mark_width,
                                     ms=self.marker_size,
                                     color=solver['color'],
-                                    marker=solver['marker'])
+                                    marker=solver['marker'],
+                                    zorder=solver['zorder'])
                 else:
                     in_axs.plot(_num_, _val_,
                                 label=solver['label'],
@@ -302,7 +303,8 @@ class DataProcessor:
                                 markeredgewidth=self.mark_width,
                                 ms=self.marker_size,
                                 color=solver['color'],
-                                marker=solver['marker'])
+                                marker=solver['marker'],
+                                zorder=solver['zorder'])
             else:
                 if (self.config['plot_std'] or self.config['plot_ci']) and len(_ci_) > 0:
                     in_axs.errorbar(_num_, _val_, yerr=_ci_,
@@ -311,7 +313,8 @@ class DataProcessor:
                                     markeredgewidth=self.mark_width,
                                     ms=self.marker_size,
                                     color=solver['color'],
-                                    marker=solver['marker'])
+                                    marker=solver['marker'],
+                                    zorder=solver['zorder'])
                 else:
                     in_axs.plot(_num_, _val_,
                                 linewidth=self.line_width,
@@ -319,7 +322,8 @@ class DataProcessor:
                                 markeredgewidth=self.mark_width,
                                 ms=self.marker_size,
                                 color=solver['color'],
-                                marker=solver['marker'])
+                                marker=solver['marker'],
+                                zorder=solver['zorder'])
 
             # # Plot confident interval with fill_between
             # if self.config['plot_ci'] and len(_ci_) > 0:
@@ -379,7 +383,12 @@ class DataProcessor:
         elif y_index == '#pathfinding' or y_index == '#low-level search calls' or \
             y_index =='#restarts' or y_index == 'solution cost':
             label_scale = 1000
-            tmp_range = 20
+
+            if in_map['name'] == 'den520d' or in_map['name'] == 'warehouse-10-20-10-2-1' or \
+                in_map['name'] == 'warehouse-20-40-10-2-1':
+                tmp_range = 80
+            else:
+                tmp_range = 20
             scale = label_scale * tmp_range
             y_list = np.arange(0, max(y_list)+5, scale)
 
@@ -421,7 +430,8 @@ class DataProcessor:
         else:
             in_axs.axes.set_yticks(y_list)
 
-        in_axs.yaxis.grid()
+        if self.config['y_grid']:
+            in_axs.yaxis.grid()
         in_axs.axes.set_yticklabels(y_list, fontsize=self.text_size)
         in_axs.set_ylabel(self.y_labels[y_index], fontsize=self.text_size)
 
@@ -617,9 +627,9 @@ class DataProcessor:
         # manager.full_screen_toggle()
         # plt.tight_layout(pad=0.05)
 
-        if len(self.config['solvers']) > 4:
-            val_ncol = len(self.config['solvers'])
-            # val_ncol = int(np.ceil(len(self.config['solvers']) / 2))
+        if len(self.config['solvers']) > 7:
+            # val_ncol = len(self.config['solvers'])
+            val_ncol = int(np.ceil(len(self.config['solvers']) / 2))
 
         else:
             val_ncol = len(self.config['solvers'])
@@ -784,7 +794,7 @@ if __name__ == '__main__':
     # data_processor.get_avg_vals(y_index='#restarts')
     # data_processor.get_avg_vals_all(y_index='succ')
 
-    data_processor.plot_fig(x_index='num', y_index='succ')
+    # data_processor.plot_fig(x_index='num', y_index='succ')
     # data_processor.plot_fig(x_index='num', y_index='runtime')
     # data_processor.plot_fig(x_index='num', y_index='#low-level search calls')
     # data_processor.plot_fig(x_index='num', y_index='#low-level expanded')
@@ -793,7 +803,7 @@ if __name__ == '__main__':
     # data_processor.plot_fig(x_index='num', y_index='#backtrack')
     # data_processor.plot_fig(x_index='num', y_index='#pathfinding')
 
-    # data_processor.plot_fig(x_index='ins', y_index='solution cost')
+    data_processor.plot_fig(x_index='ins', y_index='solution cost')
     # data_processor.plot_fig(x_index='ins', y_index='#low-level expanded')
     # data_processor.plot_fig(x_index='ins', y_index='num_total_conf')
     # data_processor.plot_fig(x_index='ins', y_index='num_in_conf')

@@ -146,6 +146,7 @@ bool PP::solve(double _time_limit)
             cout << "Timeout," << (double)runtime / CLOCKS_PER_SEC << ",0,0," << endl;
             return solution_found;
         }
+        std::random_shuffle(ordered_agents.begin(), ordered_agents.end());
         runtime = getDuration(start, steady_clock::now());
     }
     return solution_found;

@@ -7,14 +7,15 @@ figure_width: 10
 figure_height: 10
 set_title: true
 set_legend: true
-marker_size: 25
+marker_size: 20
 line_width: 4.0
-marker_width: 4.0
-text_size: 40
+marker_width: 2.5
+text_size: 32
 
 set_shift: 0
 plot_ci: false
 plot_std: false
+y_grid: true
 
 maps:
   - name: "random-32-32-20"
@@ -84,72 +85,40 @@ maps:
       - 1000
 
 solvers:
-  # - name: "PP-OPT"
-  #   label: "PP*"
-  #   color: "deepskyblue"
-  #   marker: "o"
-  #   markerfacecolor: "deepskyblue"
-
-  # - name: "PP"
-  #   label: "PP"
-  #   color: "deepskyblue"
-  #   marker: "o"
-
-  # - name: "PP-OPT-LH"
-  #   label: "PP*(LH)"
-  #   marker: "P"
-  #   color: "gray"
-  #   markerfacecolor: "gray"
+  - name: "PP-OPT-LH"
+    label: "PP*"
+    marker: "P"
+    color: "gray"
+    markerfacecolor: "gray"
+    zorder: 0
 
   - name: "PP-LH"
-    label: "PP(LH)"
-    color: "dimgray"
+    label: "PP"
     marker: "P"
-
-  # - name: "PP-OPT-SH"
-  #   label: "PP*(SH)"
-  #   color: "limegreen"
-  #   marker: "s"
-  #   markerfacecolor: "limegreen"
-
-  # - name: "PP-SH"
-  #   label: "PP(SH)"
-  #   color: "green"
-  #   marker: "s"
+    color: "gray"
+    zorder: -1
 
   - name: "PBS-OPT"
     label: "PBS*"
-    color: "orange"
-    marker: "d"
-    markerfacecolor: "orange"
+    marker: "o"
+    color: "deepskyblue"
+    markerfacecolor: "deepskyblue"
+    zorder: -2
 
-  # - name: "PBS"
-  #   label: "PBS"
-  #   color: "darkorange"
-  #   marker: "d"
-
-  # - name: "PBS-OPT-greedy"
-  #   label: "GPBS*"
-  #   marker: "H"
-  #   color: "violet"
-  #   markerfacecolor: "violet"
+  - name: "PBS"
+    label: "PBS"
+    marker: "o"
+    color: "deepskyblue"
+    zorder: -3
 
   - name: "PBS-greedy"
     label: "GPBS"
-    color: "darkviolet"
-    marker: "H"
+    color: "orange"
+    marker: "d"
+    zorder: -4
 
-  - name: "PBS2-LH-PE-TR"
-    label: "IPBS(PE,TR)"
-    color: "green"
-    marker: "s"
-  
-  # - name: "PBS2-LH-PE-IC1"
-  #   label: "IPBS(PE,IC)"
-  #   color: "gold"
-  #   marker: "D"
-
-  - name: "PBS2-LH-PE-TR-IC1-RR50"
-    label: "IPBS(PE,TR,IC,RR)"
+  - name: "PBS2-LH-PE-TR-IC0.8-RR200"
+    label: "GPBS(PE,TR,IC,RR)"
     color: "red"
     marker: "^"
+    zorder: -5

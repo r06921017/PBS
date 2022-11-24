@@ -76,6 +76,7 @@ bool PBS2::solve(clock_t time_limit)
                         stack<PBSNode*>().swap(open_list);  // clear the open_list
                         num_restart ++;
                         local_num_backtrack = 0;
+                        std::random_shuffle(init_agents.begin(), init_agents.end());
                         break;  // leave the while loop of open_list.empty
                     }
                 }
@@ -340,6 +341,7 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
                     }
                     else
                     {
+                        // We set agents with longer paths higher priorities
                         shared_ptr<Conflict> new_conflict;
                         if (paths[a]->size() < paths[a2]->size())
                             new_conflict = make_shared<Conflict>(a, a2, priority);
@@ -432,7 +434,7 @@ shared_ptr<Conflict> PBS2::chooseConflict(const PBSNode &node) const
     if (use_ic)
     {
         for (const auto& conf : node.conflicts)
-            if (conf->max_num_ic > out->max_num_ic)
+            if (conf->num_ic > out->num_ic)
                 out = conf;
     }
 
@@ -519,7 +521,7 @@ void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topologi
             (1.0-ic_ratio) / (double)(lower_pri_agents[conf->a1].size()+1);
 
         // Assign the maximum to the current conflict
-        conf->max_num_ic = max(val_a1_a2, val_a2_a1);
+        conf->num_ic = max(val_a1_a2, val_a2_a1);
         if (val_a1_a2 > val_a2_a1)
             std::swap(conf->a1, conf->a2);
     }

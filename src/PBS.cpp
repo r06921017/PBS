@@ -99,6 +99,7 @@ bool PBS::solve(clock_t _time_limit)
                 stack<PBSNode*>().swap(open_list);  // clear the open_list
                 num_restart ++;
                 local_num_backtrack = 0;
+                std::random_shuffle(init_agents.begin(), init_agents.end());
                 break;
             }
             curr->clear();
