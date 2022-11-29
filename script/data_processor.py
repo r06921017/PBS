@@ -36,13 +36,15 @@ class DataProcessor:
                                                   9: (3,3)}
         self.y_labels:Dict[str, str] = {'succ': 'Success rate',
                                         'runtime': 'Runtime (sec)',
+                                        'runtime of detecting conflicts': 'Runtiem of conflict detection (sec)',
+                                        'runtime of path finding': 'Runtime of path finding (sec)',
                                         'solution cost': 'SOC (K)',
                                         '#low-level generated': 'Number of generated LL Nodes (M)',
-                                        '#low-level expanded': 'Number of\n expansions (M)',
+                                        '#low-level expanded': 'Number of expansions (M)',
                                         '#high-level generated': 'Number of generated HL Nodes',
                                         '#high-level expanded': 'Number expanded HL nodes (K)',
                                         '#pathfinding': 'Number of replaned Agents', # (K)
-                                        '#low-level search calls': 'Number of calls (K)',
+                                        '#low-level search calls': 'Number of calls (K)',  #  
                                         '#backtrack': 'Number of backtrackings', # (K)
                                         '#restarts': 'Number of restarts', # (K)
                                         'num_total_conf': 'Number of total Conflicts (K)',
@@ -125,7 +127,7 @@ class DataProcessor:
                                 else:
                                     tmp_val = row['num_0child']
 
-                            elif row[in_index] < 0:
+                            elif row[in_index] < 0: # or row['solution cost']==-1:
                                 tmp_val = np.inf
 
                             else:
@@ -294,6 +296,7 @@ class DataProcessor:
                                     ms=self.marker_size,
                                     color=solver['color'],
                                     marker=solver['marker'],
+                                    alpha=self.config['alpha'],
                                     zorder=solver['zorder'])
                 else:
                     in_axs.plot(_num_, _val_,
@@ -304,6 +307,7 @@ class DataProcessor:
                                 ms=self.marker_size,
                                 color=solver['color'],
                                 marker=solver['marker'],
+                                alpha=self.config['alpha'],
                                 zorder=solver['zorder'])
             else:
                 if (self.config['plot_std'] or self.config['plot_ci']) and len(_ci_) > 0:
@@ -314,6 +318,7 @@ class DataProcessor:
                                     ms=self.marker_size,
                                     color=solver['color'],
                                     marker=solver['marker'],
+                                    alpha=self.config['alpha'],
                                     zorder=solver['zorder'])
                 else:
                     in_axs.plot(_num_, _val_,
@@ -323,6 +328,7 @@ class DataProcessor:
                                 ms=self.marker_size,
                                 color=solver['color'],
                                 marker=solver['marker'],
+                                alpha=self.config['alpha'],
                                 zorder=solver['zorder'])
 
             # # Plot confident interval with fill_between
@@ -432,6 +438,8 @@ class DataProcessor:
 
         if self.config['y_grid']:
             in_axs.yaxis.grid()
+        if self.config['x_grid']:
+            in_axs.xaxis.grid()
         in_axs.axes.set_yticklabels(y_list, fontsize=self.text_size)
         in_axs.set_ylabel(self.y_labels[y_index], fontsize=self.text_size)
 
@@ -642,7 +650,7 @@ class DataProcessor:
                     borderpad=0.1,
                     handletextpad=0.1,
                     labelspacing=0.1,
-                    columnspacing=0.5,
+                    columnspacing=1.0,
                     ncol=val_ncol,
                     fontsize=self.text_size)
             else:
@@ -791,11 +799,13 @@ if __name__ == '__main__':
     # Create data processor
     data_processor = DataProcessor(args.config)
 
-    # data_processor.get_avg_vals(y_index='#restarts')
+    # data_processor.get_avg_vals(y_index='#low-level expanded')
+    # data_processor.get_avg_vals(y_index='#high-level expanded')
+    # data_processor.get_avg_vals(y_index='succ')
     # data_processor.get_avg_vals_all(y_index='succ')
 
     # data_processor.plot_fig(x_index='num', y_index='succ')
-    # data_processor.plot_fig(x_index='num', y_index='runtime')
+    # data_processor.plot_fig(x_index='num', y_index='runtime of path finding')
     # data_processor.plot_fig(x_index='num', y_index='#low-level search calls')
     # data_processor.plot_fig(x_index='num', y_index='#low-level expanded')
     # data_processor.plot_fig(x_index='num', y_index='#high-level expanded')
@@ -804,10 +814,15 @@ if __name__ == '__main__':
     # data_processor.plot_fig(x_index='num', y_index='#pathfinding')
 
     data_processor.plot_fig(x_index='ins', y_index='solution cost')
+    # data_processor.plot_fig(x_index='ins', y_index='#high-level generated')
     # data_processor.plot_fig(x_index='ins', y_index='#low-level expanded')
+    # data_processor.plot_fig(x_index='ins', y_index='#backtrack')
+    # data_processor.plot_fig(x_index='ins', y_index='#low-level search calls')
     # data_processor.plot_fig(x_index='ins', y_index='num_total_conf')
     # data_processor.plot_fig(x_index='ins', y_index='num_in_conf')
     # data_processor.plot_fig(x_index='ins', y_index='num_ex_conf')
 
     # data_processor.plot_op(x_index='ins',y_index1='#low-level expanded',
-    #                        y_index2='#low-level search calls',use_op='div')
+    #                        y_index2='#high-level generated',use_op='div')
+    # data_processor.plot_op(x_index='ins',y_index1='#low-level expanded',
+    #                        y_index2='#high-level expanded',use_op='div')

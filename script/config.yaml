@@ -9,13 +9,15 @@ set_title: true
 set_legend: true
 marker_size: 20
 line_width: 4.0
-marker_width: 2.5
+marker_width: 4.0
 text_size: 32
+alpha: 1.0
 
-set_shift: 0
+set_shift: 0.1
 plot_ci: false
 plot_std: false
 y_grid: true
+x_grid: false
 
 maps:
   - name: "random-32-32-20"
@@ -74,7 +76,7 @@ maps:
       - 1000
 
   - name: "den520d"
-    label: Den520d
+    label: Game
     scens:
       - random
     num_of_agents:
@@ -88,37 +90,37 @@ solvers:
   - name: "PP-OPT-LH"
     label: "PP*"
     marker: "P"
-    color: "gray"
-    markerfacecolor: "gray"
+    color: "violet"
+    markerfacecolor: "violet"
     zorder: 0
 
   - name: "PP-LH"
     label: "PP"
     marker: "P"
-    color: "gray"
-    zorder: -1
+    color: "purple"
+    zorder: 1
 
   - name: "PBS-OPT"
     label: "PBS*"
     marker: "o"
-    color: "deepskyblue"
-    markerfacecolor: "deepskyblue"
-    zorder: -2
+    color: "navy"
+    markerfacecolor: "navy"
+    zorder: 2
 
   - name: "PBS"
     label: "PBS"
     marker: "o"
     color: "deepskyblue"
-    zorder: -3
+    zorder: 3
 
   - name: "PBS-greedy"
     label: "GPBS"
     color: "orange"
     marker: "d"
-    zorder: -4
+    zorder: 4
 
   - name: "PBS2-LH-PE-TR-IC0.8-RR200"
     label: "GPBS(PE,TR,IC,RR)"
     color: "red"
     marker: "^"
-    zorder: -5
+    zorder: 5
