@@ -28,6 +28,7 @@ int main(int argc, char** argv)
 		("agents,a", po::value<string>()->required(), "input file for agents")
 		("output,o", po::value<string>(), "output file for statistics")
 		("outputPaths", po::value<string>(), "output file for paths")
+		("outputConf", po::value<string>(), "output file for conflicts")
 		("outputPT", po::value<string>(), "output file for prioritized tree")
 		("agentNum,k", po::value<int>()->default_value(0), "number of agents")
 		("cutoffTime,t", po::value<clock_t>()->default_value(7200), "cutoff time (seconds)")
@@ -89,9 +90,11 @@ int main(int argc, char** argv)
 		pbs2.solve(vm["cutoffTime"].as<clock_t>());
 		if (vm.count("output"))
 			pbs2.saveResults(vm["output"].as<string>(), vm["agents"].as<string>());
-		if (pbs2.solution_found && vm.count("outputPaths"))
+		if (vm.count("outputPaths"))
 			pbs2.savePaths(vm["outputPaths"].as<string>());
-		if (pbs2.solution_found && vm.count("outputPT"))
+		if (vm.count("outputConf"))
+			pbs2.saveConflicts(vm["outputConf"].as<string>());
+		if (vm.count("outputPT"))
 			pbs2.saveCT(vm["outputPT"].as<string>());
 		pbs2.clearSearchEngines();
 	}

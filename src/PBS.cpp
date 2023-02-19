@@ -592,6 +592,52 @@ void PBS::savePaths(const string &fileName) const
     output.close();
 }
 
+void PBS::saveConflicts(const string &fileName) const
+{
+    std::ofstream output;
+    output.open(fileName, std::ios::out);
+    output << "Conflicts" << endl;
+
+    // check whether the paths are feasible
+	for (int a1 = 0; a1 < num_of_agents; a1++)
+	{
+		for (int a2 = a1 + 1; a2 < num_of_agents; a2++)
+		{
+			size_t min_path_length = paths[a1]->size() < paths[a2]->size() ? paths[a1]->size() : paths[a2]->size();
+			for (size_t timestep = 0; timestep < min_path_length; timestep++)
+			{
+				int loc1 = paths[a1]->at(timestep).location;
+				int loc2 = paths[a2]->at(timestep).location;
+				if (loc1 == loc2)
+				{
+					output << a1 << "," << a2 << "," << loc1 << ",-1," << timestep << ",V" << endl;
+				}
+				else if (timestep < min_path_length - 1
+					&& loc1 == paths[a2]->at(timestep + 1).location
+					&& loc2 == paths[a1]->at(timestep + 1).location)
+				{
+					output << a1 << "," << a2 << "," << loc1 << "," << loc2 << "," << (timestep+1) << ",E" << endl;
+				}
+			}
+			if (paths[a1]->size() != paths[a2]->size())
+			{
+				int a1_ = paths[a1]->size() < paths[a2]->size() ? a1 : a2;
+				int a2_ = paths[a1]->size() < paths[a2]->size() ? a2 : a1;
+				int loc1 = paths[a1_]->back().location;
+				for (size_t timestep = min_path_length; timestep < paths[a2_]->size(); timestep++)
+				{
+					int loc2 = paths[a2_]->at(timestep).location;
+					if (loc1 == loc2)
+					{
+    					output << a1 << "," << a2 << "," << loc1 << ",-1," << timestep << ",T" << endl;
+					}
+				}
+			}
+		}
+	}
+    output << "---" << endl;
+}
+
 void PBS::printConflicts(const PBSNode &curr, int num)
 {
     int counter = 0;
