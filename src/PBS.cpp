@@ -119,6 +119,11 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
     priority_graph[low][high] = true;
     if (screen > 2)
         printPriorityGraph();
+
+    list<shared_ptr<Conflict>> cur_conflicts;  // Copy parent conflicts to a list
+    for (shared_ptr<Conflict> conf : parent->conflicts)
+        cur_conflicts.push_back(conf);
+
     topologicalSort(ordered_agents);
     if (screen > 2)
     {
@@ -201,12 +206,13 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
         }
 
         // Delete old conflicts
-        for (auto c = node->conflicts.begin(); c != node->conflicts.end();)
+        list<shared_ptr<Conflict>>::iterator _cit_ = cur_conflicts.begin();
+        while(_cit_ != cur_conflicts.end())
         {
-            if ((*c)->a1 == a or (*c)->a2 == a)
-                c = node->conflicts.erase(c);
+            if ((*_cit_)->a1 == a or (*_cit_)->a2 == a)
+                _cit_ = cur_conflicts.erase(_cit_);
             else
-                ++c;
+                ++_cit_;
         }
 
         // Update conflicts and to_replan
@@ -231,7 +237,7 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
             steady_clock::time_point t = steady_clock::now();
             if (hasConflicts(a, a2))
             {
-                node->conflicts.emplace_back(new Conflict(a, a2));
+                cur_conflicts.push_back(make_shared<Conflict>(a, a2));
                 if (lower_agents.count(a2) > 0) // has a collision with a lower priority agent
                 {
                     if (screen > 1)
@@ -243,6 +249,10 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
             runtime_detect_conflicts += getDuration(t, steady_clock::now());
         }
     }
+
+    for (shared_ptr<Conflict> c: cur_conflicts)
+        node->conflicts.push(c);
+
     num_HL_generated++;
     node->time_generated = num_HL_generated;
     if (screen > 1)
@@ -353,10 +363,14 @@ bool PBS::hasConflicts(int a1, const set<int>& agents) const
 shared_ptr<Conflict> PBS::chooseConflict(const PBSNode &node) const
 {
 	if (screen == 3)
+    {
+        cout << "chooseConflict" << endl;
 		printConflicts(node);
+    }
 	if (node.conflicts.empty())
 		return nullptr;
-    return node.conflicts.back();
+    shared_ptr<Conflict> out = node.conflicts.top();
+    return out;
 }
 
 int PBS::getSumOfCosts() const
@@ -641,9 +655,9 @@ void PBS::saveConflicts(const string &fileName) const
 void PBS::printConflicts(const PBSNode &curr, int num)
 {
     int counter = 0;
-	for (const auto& conflict : curr.conflicts)
+	for (auto cit = curr.conflicts.ordered_begin(); cit != curr.conflicts.ordered_end(); cit++)
 	{
-		cout << *conflict << endl;
+		cout << **cit << endl;
         counter ++;
         if (counter > num)
             break;
@@ -722,9 +736,9 @@ bool PBS::generateRoot()
             if(hasConflicts(a1, a2))
             {
                 if (paths[a1]->size() < paths[a2]->size())
-                    root->conflicts.emplace_back(new Conflict(a1, a2));
+                    root->conflicts.push(make_shared<Conflict>(a1, a2));
                 else
-                    root->conflicts.emplace_back(new Conflict(a2, a1));
+                    root->conflicts.push(make_shared<Conflict>(a2, a1));
             }
         }
     }

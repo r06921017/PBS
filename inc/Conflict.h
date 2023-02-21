@@ -1,7 +1,7 @@
 #pragma once
 #include "common.h"
 
-enum conflict_selection {RANDOM, EARLIEST, CONFLICTS, MCONSTRAINTS, FCONSTRAINTS, WIDTH, SINGLETONS};
+enum conflict_priority {NONE, NORMAL, START, TARGET, TARGET_START};
 
 struct Constraint
 {
@@ -24,11 +24,32 @@ struct Conflict
 	int a1;
 	int a2;
     int priority;
-    double num_ic;  // Maximum number of implicit constraints between a1->a2 and a2->a2
-    explicit Conflict(int a1=-1, int a2=-1, int priority=-1, int num_ic=-1): 
-        a1(a1), a2(a2), priority(priority), num_ic(num_ic) {}
+    uint num_ic;  // Maximum number of implicit constraints between a1->a2 and a2->a2
+    uint ll_calls;
+    explicit Conflict(int a1=-1, int a2=-1, int priority=1, uint num_ic=0, uint ll_calls=0):
+        a1(a1), a2(a2), priority(priority), num_ic(num_ic), ll_calls(ll_calls) {}
 };
 
 std::ostream& operator<<(std::ostream& os, const Conflict& conflict);
 
 bool operator < (const Conflict& conflict1, const Conflict& conflict2);
+
+struct compare_conflicts
+{
+    bool operator()(const shared_ptr<Conflict> c1, const shared_ptr<Conflict> c2) const
+    {
+        if (c1->priority == c2->priority)
+        {
+            if (c1->num_ic == c2->num_ic)
+            {
+                if (c1->ll_calls == c2->ll_calls)
+                {
+                    return rand() % 2;
+                }
+                return c1->ll_calls > c2->ll_calls;
+            }
+            return c1->num_ic < c2->num_ic;
+        }
+        return c1->priority < c2->priority;
+    }
+};

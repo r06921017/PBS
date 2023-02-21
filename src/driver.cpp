@@ -11,7 +11,7 @@
 #include <boost/tokenizer.hpp>
 #include "PBS.h"
 #include "PBS2.h"
-#include "PVCS.h"
+// #include "PVCS.h"
 #include "PP.h"
 
 /* Main function */
@@ -98,17 +98,17 @@ int main(int argc, char** argv)
 			pbs2.saveCT(vm["outputPT"].as<string>());
 		pbs2.clearSearchEngines();
 	}
-	else if (vm["solver"].as<string>() == "PVCS")
-	{
-		PVCS pvcs(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>(), vm["tr"].as<bool>());
-		// run
-		pvcs.solve(vm["cutoffTime"].as<clock_t>());
-		if (vm.count("output"))
-			pvcs.saveResults(vm["output"].as<string>(), vm["agents"].as<string>());
-		if (pvcs.solution_found && vm.count("outputPaths"))
-			pvcs.savePaths(vm["outputPaths"].as<string>());
-		pvcs.clearSearchEngines();
-	}
+	// else if (vm["solver"].as<string>() == "PVCS")
+	// {
+	// 	PVCS pvcs(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>(), vm["tr"].as<bool>());
+	// 	// run
+	// 	pvcs.solve(vm["cutoffTime"].as<clock_t>());
+	// 	if (vm.count("output"))
+	// 		pvcs.saveResults(vm["output"].as<string>(), vm["agents"].as<string>());
+	// 	if (pvcs.solution_found && vm.count("outputPaths"))
+	// 		pvcs.savePaths(vm["outputPaths"].as<string>());
+	// 	pvcs.clearSearchEngines();
+	// }
 	else if (vm["solver"].as<string>() == "PP")
 	{
 		if (vm["lh"].as<bool>() and vm["sh"].as<bool>())

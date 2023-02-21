@@ -35,7 +35,6 @@ public:
 	void clear(); // used for rapid random  restart
 
 private:
-	conflict_selection conflict_seletion_rule;
     string getSolverName() const;
 
 	int screen;

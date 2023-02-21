@@ -35,7 +35,6 @@ public:
 	~PBS();
 
 	// set params
-	inline void setConflictSelectionRule(conflict_selection c) { conflict_seletion_rule = c;}
 	inline void setNodeLimit(int n) { node_limit = n; }
 
 	// Runs the algorithm until the problem is solved or time is exhausted 
@@ -64,7 +63,6 @@ protected:
 
     vector<int> init_agents;
 	vector<Path*> paths;
-	conflict_selection conflict_seletion_rule;
 	vector <SingleAgentSolver*> search_engines;  // used to find (single) agents' paths and mdd
 	stack<PBSNode*> open_list;
 	list<PBSNode*> allNodes_table;

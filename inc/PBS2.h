@@ -19,8 +19,9 @@ protected:
 	// high-level search
     bool generateRoot(void);
     bool generateChild(int child_id, PBSNode* parent, int low, int high);
-    int hasConflicts(int a1, int a2) const;
+    conflict_priority hasConflicts(int a1, int a2) const;
 	shared_ptr<Conflict> chooseConflict(const PBSNode &node) const;
 	PBSNode* selectNode();
-    void computeImplicitConstraints(PBSNode* node, const vector<int>& topological_orders);
+    void computeImplicitConstraints(PBSNode* node, list<shared_ptr<Conflict>> conflicts,
+        const vector<int>& topological_orders);
 };

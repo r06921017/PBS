@@ -470,7 +470,7 @@ Path SpaceTimeAStar::findPath(const ConstraintTable& constraint_table)
             }
             else // update existing node's if needed (only in the open_list)
             {
-                auto existing_next = *it;
+                AStarNode* existing_next = *it;
                 if (existing_next->num_of_conflicts > goal->num_of_conflicts ||
                    (existing_next->num_of_conflicts == goal->num_of_conflicts &&
                     existing_next->getFVal() > goal->getFVal()))

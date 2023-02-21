@@ -151,29 +151,60 @@ bool PBS2::generateRoot()
         {
             if (use_tr)
             {
-                int priority = hasConflicts(a1, a2);
-                if (priority > 0)
+                conflict_priority priority = hasConflicts(a1, a2);
+                if (priority > conflict_priority::NONE)
                 {
+                    // bool is_passing_start = false;
+                    // for (const auto& _p_ : *paths[a1])
+                    // {
+                    //     if (_p_.location == paths[a2]->front().location)
+                    //     {
+                    //         is_passing_start = true;
+                    //         break;
+                    //     }
+                    // }
+                    // if (!is_passing_start)
+                    // {
+                    //     for (const auto& _p_ : *paths[a2])
+                    //     if (_p_.location == paths[a1]->front().location)
+                    //     {
+                    //         is_passing_start = true;
+                    //         break;
+                    //     }
+                    // }
+
+                    // if (is_passing_start)
+                    // {
+                    //     if (priority == conflict_priority::TARGET)
+                    //     {
+                    //         priority = conflict_priority::TARGET_START;
+                    //     }
+                    //     else
+                    //     {
+                    //         assert(priority == conflict_priority::NORMAL);
+                    //         priority = conflict_priority::START;
+                    //     }
+                    // }
+
+                    // Prioritize to resolve target conflicts earlier others
                     // We set agents with longer paths higher priorities
                     shared_ptr<Conflict> new_conflict;
                     if (paths[a1]->size() < paths[a2]->size())
                         new_conflict = make_shared<Conflict>(a1, a2, priority);
                     else
                         new_conflict = make_shared<Conflict>(a2, a1, priority);
-
-                    // Prioritize to resolve target conflicts earlier others
-                    if (priority == 1)
-                        root->conflicts.push_front(new_conflict);
-                    else if(priority == 2)
-                        root->conflicts.push_back(new_conflict);
+                    root->conflicts.push(new_conflict);
                 }
             }
             else if (PBS::hasConflicts(a1, a2))  // not using target reasoning
             {
+                // We set agents with longer paths higher priorities
+                shared_ptr<Conflict> new_conflict;
                 if (paths[a1]->size() < paths[a2]->size())
-                    root->conflicts.emplace_back(new Conflict(a1, a2));
+                    new_conflict = make_shared<Conflict>(a1, a2);
                 else
-                    root->conflicts.emplace_back(new Conflict(a2, a1));
+                    new_conflict = make_shared<Conflict>(a2, a1);
+                root->conflicts.push(new_conflict);
             }
         }
     }
@@ -205,14 +236,15 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
 {
     assert(child_id == 0 or child_id == 1);
     parent->children[child_id] = new PBSNode(*parent);
-    auto node = parent->children[child_id];
+    PBSNode* node = parent->children[child_id];
     node->constraint.set(low, high);
     priority_graph[high][low] = false;
     priority_graph[low][high] = true;
-    #ifndef NDEBUG
-    if (screen > 2)
-        printPriorityGraph();
-    #endif
+    assert(node->conflicts.empty());
+
+    list<shared_ptr<Conflict>> cur_conflicts;  // Copy parent conflicts to a list
+    for (shared_ptr<Conflict> conf : parent->conflicts)
+        cur_conflicts.push_back(conf);
 
     topologicalSort(ordered_agents);
     if (screen > 2)
@@ -298,12 +330,13 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
         }
 
         // Delete old conflicts
-        for (auto c = node->conflicts.begin(); c != node->conflicts.end();)
+        list<shared_ptr<Conflict>>::iterator _cit_ = cur_conflicts.begin();
+        while(_cit_ != cur_conflicts.end())
         {
-            if ((*c)->a1 == a or (*c)->a2 == a)
-                c = node->conflicts.erase(c);
+            if ((*_cit_)->a1 == a or (*_cit_)->a2 == a)
+                _cit_ = cur_conflicts.erase(_cit_);
             else
-                ++c;
+                ++_cit_;
         }
 
         // Update conflicts and to_replan
@@ -329,8 +362,8 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
 
             if (use_tr)
             {
-                int priority = hasConflicts(a, a2);
-                if (priority > 0)  // there is a conflict
+                conflict_priority priority = hasConflicts(a, a2);
+                if (priority > conflict_priority::NONE)  // there is a conflict
                 {
                     if (lower_agents.count(a2) > 0) // has a collision with a lower priority agent
                     {
@@ -341,18 +374,45 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
                     }
                     else
                     {
+                        // bool is_passing_start = false;
+                        // for (const auto& _p_ : *paths[a])
+                        // {
+                        //     if (_p_.location == paths[a2]->front().location)
+                        //     {
+                        //         is_passing_start = true;
+                        //         break;
+                        //     }
+                        // }
+                        // if (!is_passing_start)
+                        // {
+                        //     for (const auto& _p_ : *paths[a2])
+                        //     if (_p_.location == paths[a]->front().location)
+                        //     {
+                        //         is_passing_start = true;
+                        //         break;
+                        //     }
+                        // }
+
+                        // if (is_passing_start)
+                        // {
+                        //     if (priority == conflict_priority::TARGET)
+                        //     {
+                        //         priority = conflict_priority::TARGET_START;
+                        //     }
+                        //     else
+                        //     {
+                        //         assert(priority == conflict_priority::NORMAL);
+                        //         priority = conflict_priority::START;
+                        //     }
+                        // }
+
                         // We set agents with longer paths higher priorities
                         shared_ptr<Conflict> new_conflict;
                         if (paths[a]->size() < paths[a2]->size())
                             new_conflict = make_shared<Conflict>(a, a2, priority);
                         else
                             new_conflict = make_shared<Conflict>(a2, a, priority);
-
-                        // Prioritize to resolve target conflicts earlier others
-                        if (priority == 1)
-                            node->conflicts.push_front(new_conflict);
-                        else if (priority == 2)  // Target conflict
-                            node->conflicts.push_back(new_conflict);
+                        cur_conflicts.push_back(new_conflict);
                     }
                 }
             }
@@ -367,10 +427,12 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
                 }
                 else
                 {
+                    shared_ptr<Conflict> new_conflict;
                     if (paths[a]->size() < paths[a2]->size())
-                        node->conflicts.emplace_back(new Conflict(a, a2));
+                        new_conflict = make_shared<Conflict>(a, a2);
                     else
-                        node->conflicts.emplace_back(new Conflict(a2, a));
+                        new_conflict = make_shared<Conflict>(a2, a);
+                    node->conflicts.push(new_conflict);
                 }
             }
             runtime_detect_conflicts += getDuration(t, steady_clock::now());
@@ -378,18 +440,22 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
     }
 
     if (use_ic)  // Compute the implicit constraints
-    {
-        computeImplicitConstraints(node, topological_orders);
-    }
+        computeImplicitConstraints(node, cur_conflicts, topological_orders);
+
+    for (shared_ptr<Conflict> c: cur_conflicts)
+        node->conflicts.push(c);
 
     num_HL_generated++;
     node->time_generated = num_HL_generated;
     if (screen > 1)
+    {
         cout << "Generate " << *node << endl;
+        printConflicts(*node);
+    }
     return true;
 }
 
-int PBS2::hasConflicts(int a1, int a2) const
+conflict_priority PBS2::hasConflicts(int a1, int a2) const
 {
 	int min_path_length = (int) (paths[a1]->size() < paths[a2]->size() ? paths[a1]->size() : paths[a2]->size());
     if (paths[a1]->size() != paths[a2]->size())
@@ -402,7 +468,7 @@ int PBS2::hasConflicts(int a1, int a2) const
 			int loc2 = paths[a2_]->at(timestep).location;
 			if (loc1 == loc2)
 			{
-				return 2; // target conflict
+				return conflict_priority::TARGET; // target conflict
 			}
 		}
 	}
@@ -415,10 +481,10 @@ int PBS2::hasConflicts(int a1, int a2) const
                              loc1 == paths[a2]->at(timestep + 1).location and
                              loc2 == paths[a1]->at(timestep + 1).location))
 		{
-            return 1;  // vertex or edge conflict
+            return conflict_priority::NORMAL;  // vertex or edge conflict
 		}
 	}
-    return 0; // conflict-free
+    return conflict_priority::NONE; // conflict-free
 }
 
 shared_ptr<Conflict> PBS2::chooseConflict(const PBSNode &node) const
@@ -426,22 +492,28 @@ shared_ptr<Conflict> PBS2::chooseConflict(const PBSNode &node) const
     if (node.conflicts.empty())
         return nullptr;
 
-    shared_ptr<Conflict> out = node.conflicts.back();
+    shared_ptr<Conflict> out = node.conflicts.top();
+    // if (use_tr and out->priority == 2)
+    //     return out;
 
-    if (use_tr and out->priority == 2)
-        return out;
+    // if (use_ic)
+    // {
+    //     for (const auto& conf : node.conflicts)
+    //         if (conf->num_ic > out->num_ic)
+    //             out = conf;
+    // }
 
-    if (use_ic)
+    if (screen == 3)
     {
-        for (const auto& conf : node.conflicts)
-            if (conf->num_ic > out->num_ic)
-                out = conf;
+        cout << "chooseConflict" << endl;
+        printConflicts(node, 10);
     }
 
     return out;
 }
 
-void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topological_orders)
+void PBS2::computeImplicitConstraints(PBSNode* node, list<shared_ptr<Conflict>> conflicts, 
+    const vector<int>& topological_orders)
 {
     vector<set<int>> higher_pri_agents(num_of_agents);
     vector<set<int>> lower_pri_agents(num_of_agents);
@@ -450,9 +522,11 @@ void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topologi
     list<int>::iterator ag_it;
 
     steady_clock::time_point t = steady_clock::now();
-    for (auto& conf : node->conflicts)
+    for (shared_ptr<Conflict> conf : conflicts)
     {
-        if (conf->priority == 2) continue;
+        if (conf->priority == conflict_priority::TARGET or
+            conf->priority == conflict_priority::TARGET_START)
+            continue;
 
         // Compute the additional implicit constraints for priority a1 -> a2
         if (higher_pri_agents[conf->a1].empty())
@@ -484,8 +558,8 @@ void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topologi
             }
         }
         node->num_IC->at(conf->a2).at(conf->a1) = num_ic_a1_a2;
-        double val_a1_a2 = ic_ratio * (double)num_ic_a1_a2 + 
-            (1.0-ic_ratio) / (double)(lower_pri_agents[conf->a2].size()+1);
+        // double val_a1_a2 = ic_ratio * (double)num_ic_a1_a2 + 
+        //     (1.0-ic_ratio) / (double)(lower_pri_agents[conf->a2].size()+1);
 
         // Compute the additional implicit constraints for priority a2 -> a1
         if (higher_pri_agents[conf->a2].empty())
@@ -517,13 +591,21 @@ void PBS2::computeImplicitConstraints(PBSNode* node, const vector<int>& topologi
             }
         }
         node->num_IC->at(conf->a1).at(conf->a2) = num_ic_a2_a1;
-        double val_a2_a1 = ic_ratio * (double)num_ic_a2_a1 +
-            (1.0-ic_ratio) / (double)(lower_pri_agents[conf->a1].size()+1);
+        // double val_a2_a1 = ic_ratio * (double)num_ic_a2_a1 +
+        //     (1.0-ic_ratio) / (double)(lower_pri_agents[conf->a1].size()+1);
 
         // Assign the maximum to the current conflict
-        conf->num_ic = max(val_a1_a2, val_a2_a1);
-        if (val_a1_a2 > val_a2_a1)
+        if (num_ic_a1_a2 > num_ic_a2_a1)
+        {
+            conf->num_ic = num_ic_a1_a2;
+            conf->ll_calls = lower_pri_agents[conf->a2].size()+1;
             std::swap(conf->a1, conf->a2);
+        }
+        else
+        {
+            conf->num_ic = num_ic_a2_a1;
+            conf->ll_calls = lower_pri_agents[conf->a1].size()+1;
+        }
     }
     runtime_implicit_constraints += getDuration(t, steady_clock::now());
 }
