@@ -40,7 +40,7 @@ bool PBS2::solve(clock_t time_limit)
                 curr->conflict = chooseConflict(*curr);
                 curr->is_expanded = true;
                 if (screen > 1)
-                    cout << "	Expand " << *curr << "	on " << *(curr->conflict) << endl;
+                    cout << "	Expand " << *curr << " on " << *(curr->conflict) << endl;
 
                 assert(!hasHigherPriority(curr->conflict->a1, curr->conflict->a2) and 
                     !hasHigherPriority(curr->conflict->a2, curr->conflict->a1) );
