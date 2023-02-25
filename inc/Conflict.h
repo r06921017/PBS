@@ -1,7 +1,7 @@
 #pragma once
 #include "common.h"
 
-enum conflict_priority {NONE, NORMAL, START, TARGET, TARGET_START};
+enum conflict_priority {NONE, NORMAL, TARGET};
 
 struct Constraint
 {

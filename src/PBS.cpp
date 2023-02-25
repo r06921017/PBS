@@ -159,7 +159,7 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
     assert(*p2 == low);
     getLowerPriorityAgents(p2, lower_agents);
 
-    for (const auto & conflict : node->conflicts)
+    for (const auto & conflict : cur_conflicts)
     {
         int a1 = conflict->a1;
         int a2 = conflict->a2;

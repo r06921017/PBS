@@ -247,13 +247,13 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
         cur_conflicts.push_back(conf);
 
     topologicalSort(ordered_agents);
-    if (screen > 2)
-    {
-        cout << "Ordered agents: ";
-        for (int i : ordered_agents)
-            cout << i << ",";
-        cout << endl;
-    }
+    // if (screen > 2)
+    // {
+    //     cout << "Ordered agents: ";
+    //     for (int i : ordered_agents)
+    //         cout << i << ",";
+    //     cout << endl;
+    // }
     vector<int> topological_orders(num_of_agents); // map agent i to its position in ordered_agents
     int i = num_of_agents - 1;
     for (const int & a : ordered_agents)
@@ -281,7 +281,7 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
     assert(*p2 == low);
     getLowerPriorityAgents(p2, lower_agents);
 
-    for (const auto & conflict : node->conflicts)
+    for (const auto & conflict : cur_conflicts)
     {
         int a1 = conflict->a1;
         int a2 = conflict->a2;
@@ -392,7 +392,6 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
                         //         break;
                         //     }
                         // }
-
                         // if (is_passing_start)
                         // {
                         //     if (priority == conflict_priority::TARGET)
@@ -432,7 +431,7 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
                         new_conflict = make_shared<Conflict>(a, a2);
                     else
                         new_conflict = make_shared<Conflict>(a2, a);
-                    node->conflicts.push(new_conflict);
+                    cur_conflicts.push_back(new_conflict);
                 }
             }
             runtime_detect_conflicts += getDuration(t, steady_clock::now());
@@ -442,6 +441,7 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
     if (use_ic)  // Compute the implicit constraints
         computeImplicitConstraints(node, cur_conflicts, topological_orders);
 
+    assert(node->conflicts.empty());
     for (shared_ptr<Conflict> c: cur_conflicts)
         node->conflicts.push(c);
 
@@ -450,7 +450,7 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
     if (screen > 1)
     {
         cout << "Generate " << *node << endl;
-        printConflicts(*node);
+        // printConflicts(*node);
     }
     return true;
 }
@@ -491,24 +491,7 @@ shared_ptr<Conflict> PBS2::chooseConflict(const PBSNode &node) const
 {
     if (node.conflicts.empty())
         return nullptr;
-
     shared_ptr<Conflict> out = node.conflicts.top();
-    // if (use_tr and out->priority == 2)
-    //     return out;
-
-    // if (use_ic)
-    // {
-    //     for (const auto& conf : node.conflicts)
-    //         if (conf->num_ic > out->num_ic)
-    //             out = conf;
-    // }
-
-    if (screen == 3)
-    {
-        cout << "chooseConflict" << endl;
-        printConflicts(node, 10);
-    }
-
     return out;
 }
 
@@ -524,8 +507,7 @@ void PBS2::computeImplicitConstraints(PBSNode* node, list<shared_ptr<Conflict>> 
     steady_clock::time_point t = steady_clock::now();
     for (shared_ptr<Conflict> conf : conflicts)
     {
-        if (conf->priority == conflict_priority::TARGET or
-            conf->priority == conflict_priority::TARGET_START)
+        if (conf->priority == conflict_priority::TARGET)
             continue;
 
         // Compute the additional implicit constraints for priority a1 -> a2
