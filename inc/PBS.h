@@ -51,6 +51,7 @@ public:
 protected:
     int screen;
 	clock_t time_limit;
+	uint init_cost = 0;
 	int node_limit = MAX_NODES;
     steady_clock::time_point start;
 	int num_of_agents;

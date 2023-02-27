@@ -40,10 +40,10 @@ bool PBS2::solve(clock_t time_limit)
                 curr->conflict = chooseConflict(*curr);
                 curr->is_expanded = true;
                 if (screen > 1)
-                    cout << "	Expand " << *curr << " on " << *(curr->conflict) << endl;
+                    cout << "Expand " << *curr << " on " << *(curr->conflict) << endl;
 
-                assert(!hasHigherPriority(curr->conflict->a1, curr->conflict->a2) and 
-                    !hasHigherPriority(curr->conflict->a2, curr->conflict->a1) );
+                // assert(!hasHigherPriority(curr->conflict->a1, curr->conflict->a2) and 
+                //     !hasHigherPriority(curr->conflict->a2, curr->conflict->a1) );
 
                 t1 = steady_clock::now();
                 generateChild(0, curr, curr->conflict->a1, curr->conflict->a2);
@@ -55,7 +55,7 @@ bool PBS2::solve(clock_t time_limit)
             else  // We only generate another child node if back-tracking happens
             {
                 if (screen > 1)
-                    cout << "	Expand " << *curr << "	on " << *(curr->conflict) << endl;
+                    cout << "Expand " << *curr << " on " << *(curr->conflict) << endl;
 
                 open_list.pop();
                 t1 = steady_clock::now();    
@@ -72,12 +72,28 @@ bool PBS2::solve(clock_t time_limit)
                     local_num_backtrack ++;
                     if (use_rr && local_num_backtrack > rr_th)
                     {
-                        clear();
-                        stack<PBSNode*>().swap(open_list);  // clear the open_list
                         num_restart ++;
                         local_num_backtrack = 0;
-                        std::random_shuffle(init_agents.begin(), init_agents.end());
-                        break;  // leave the while loop of open_list.empty
+
+                        // Only restart the Priority Graph
+                        update(curr);
+                        PBSNode* new_root = generateRoot(curr);
+                        clear();
+                        stack<PBSNode*>().swap(open_list);  // clear the open_list
+                        pushNode(new_root);
+                        dummy_start = new_root;
+                        // std::random_shuffle(init_agents.begin(), init_agents.end());
+                        // break;  // leave the while loop of open_list.empty
+                        #ifndef NDEBUG
+                        assert(open_list.size() == 1);
+                        assert(allNodes_table.size() == 1);
+                        if (screen > 1)
+                        {
+                            printConflicts(*new_root);
+                            cout << endl;
+                        }
+                        #endif
+                        continue;
                     }
                 }
                 curr->clear();
@@ -87,7 +103,7 @@ bool PBS2::solve(clock_t time_limit)
     return solution_found;
 }
 
-PBSNode* PBS2::selectNode()
+PBSNode* PBS2::selectNode(void)
 {
 	PBSNode* curr = open_list.top();
     update(curr);
@@ -96,12 +112,10 @@ PBSNode* PBS2::selectNode()
         num_HL_expanded++;
         curr->time_expanded = num_HL_expanded;
     }
-	if (screen > 1)
-		cout << endl << "Select " << *curr << endl;
 	return curr;
 }
 
-string PBS2::getSolverName() const
+string PBS2::getSolverName(void) const
 {
     string sol_name = "PBS2";
     if (use_tr)
@@ -114,7 +128,7 @@ string PBS2::getSolverName() const
     return sol_name;
 }
 
-bool PBS2::generateRoot()
+bool PBS2::generateRoot(void)
 {
     paths = vector<Path*>(num_of_agents, nullptr);
     PBSNode* root = new PBSNode();
@@ -232,6 +246,39 @@ bool PBS2::generateRoot()
     return true;
 }
 
+PBSNode* PBS2::generateRoot(const PBSNode* node)
+{
+    PBSNode* root = new PBSNode();
+    root->cost = 0;
+    root->depth = 0;
+    root->is_expanded = false;
+    for (const int& _ag_ : init_agents)
+    {
+        Path new_path(*paths[_ag_]);
+        root->paths.emplace_back(_ag_, new_path);
+        paths[_ag_] = &root->paths.back().second;
+        root->makespan = max(root->makespan, new_path.size() - 1);
+        root->cost += (int)new_path.size() - 1;
+    }
+
+    for (shared_ptr<Conflict> conf : node->conflicts)
+    {
+        conf->num_ic = 0;
+        // conf->ll_calls = 1;
+        conf->ll_calls = paths[conf->a1]->size();
+        root->conflicts.push(conf);
+    }
+
+    root->time_generated = node->time_generated;
+    root->time_expanded = node->time_expanded;
+    if (use_ic)
+    {
+        root->num_IC = make_shared<vector<vector<uint>>>(
+            vector<vector<uint>>(num_of_agents, vector<uint>(num_of_agents, 0)));
+    }
+    return root;
+}
+
 bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
 {
     assert(child_id == 0 or child_id == 1);
@@ -306,21 +353,27 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
         tie(rank, a) = to_replan.top();
         to_replan.pop();
         lookup_table[a] = false;
-        if (screen > 2) cout << "Replan agent " << a << endl;
-        // Re-plan path
+
+        // Get agents with higher priorities
         set<int> higher_agents;
         auto p = ordered_agents.rbegin();
         std::advance(p, rank);
-        assert(*p == a);
         getHigherPriorityAgents(p, higher_agents);
+        #ifndef NDEBUG
+        assert(*p == a);
         assert(!higher_agents.empty());
+        if (screen > 1)
+            cout << "\tReplan agent " << a << endl;
         if (screen > 2)
         {
-            cout << "Higher agents: ";
+            cout << "\tHigher agents: ";
             for (auto i : higher_agents)
                 cout << i << ",";
             cout << endl;
         }
+        #endif
+
+        // Re-plan path
         Path new_path;
         if(!findPathForSingleAgent(*node, higher_agents, a, new_path))
         {
@@ -343,15 +396,17 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
         set<int> lower_agents;
         auto p2 = ordered_agents.begin();
         std::advance(p2, num_of_agents - 1 - rank);
-        assert(*p2 == a);
         getLowerPriorityAgents(p2, lower_agents);
+        #ifndef NDEBUG
+        assert(*p2 == a);
         if (screen > 2 and !lower_agents.empty())
         {
-            cout << "Lower agents: ";
+            cout << "\tLower agents: ";
             for (auto i : lower_agents)
                 cout << i << ",";
             cout << endl;
         }
+        #endif
 
         // Find new conflicts
         for (auto a2 = 0; a2 < num_of_agents; a2++)
@@ -367,8 +422,10 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
                 {
                     if (lower_agents.count(a2) > 0) // has a collision with a lower priority agent
                     {
+                        #ifndef NDEBUG
                         if (screen > 1)
                             cout << "\tshould replan " << a2 << " for colliding with " << a << endl;
+                        #endif
                         to_replan.emplace(topological_orders[a2], a2);
                         lookup_table[a2] = true;
                     }
@@ -419,8 +476,10 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
             {
                 if (lower_agents.count(a2) > 0) // has a collision with a lower priority agent
                 {
+                    #ifndef NDEBUG
                     if (screen > 1)
                         cout << "\tshould replan " << a2 << " for colliding with " << a << endl;
+                    #endif
                     to_replan.emplace(topological_orders[a2], a2);
                     lookup_table[a2] = true;
                 }
@@ -448,10 +507,7 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
     num_HL_generated++;
     node->time_generated = num_HL_generated;
     if (screen > 1)
-    {
-        cout << "Generate " << *node << endl;
-        // printConflicts(*node);
-    }
+        cout << "\tGenerate " << *node << endl;
     return true;
 }
 
@@ -510,7 +566,7 @@ void PBS2::computeImplicitConstraints(PBSNode* node, list<shared_ptr<Conflict>> 
         if (conf->priority == conflict_priority::TARGET)
             continue;
 
-        // Compute the additional implicit constraints for priority a1 -> a2
+        // Compute the additional implicit constraints for priority a2 <- a1
         if (higher_pri_agents[conf->a1].empty())
         {
             ag_rit = ordered_agents.rbegin();
@@ -527,7 +583,7 @@ void PBS2::computeImplicitConstraints(PBSNode* node, list<shared_ptr<Conflict>> 
             getLowerPriorityAgents(ag_it, lower_pri_agents[conf->a2]);
         }
 
-        uint num_ic_a1_a2 = (uint) ((higher_pri_agents[conf->a1].size()+1) * 
+        uint num_ic_a2_a1 = (uint) ((higher_pri_agents[conf->a1].size()+1) * 
             (lower_pri_agents[conf->a2].size()+1));
         for (const int& h_ag : higher_pri_agents[conf->a1])
         {
@@ -535,15 +591,15 @@ void PBS2::computeImplicitConstraints(PBSNode* node, list<shared_ptr<Conflict>> 
             {
                 if (priority_graph[l_ag][h_ag])  // Reduce the IC that already exists
                 {
-                    num_ic_a1_a2 -= node->num_IC->at(l_ag).at(h_ag);
+                    num_ic_a2_a1 -= node->num_IC->at(l_ag).at(h_ag);
                 }
             }
         }
-        node->num_IC->at(conf->a2).at(conf->a1) = num_ic_a1_a2;
-        // double val_a1_a2 = ic_ratio * (double)num_ic_a1_a2 + 
+        node->num_IC->at(conf->a2).at(conf->a1) = num_ic_a2_a1;
+        // double val_a1_a2 = ic_ratio * (double)num_ic_a2_a1 + 
         //     (1.0-ic_ratio) / (double)(lower_pri_agents[conf->a2].size()+1);
 
-        // Compute the additional implicit constraints for priority a2 -> a1
+        // Compute the additional implicit constraints for priority a1 <- a2
         if (higher_pri_agents[conf->a2].empty())
         {
             ag_rit = ordered_agents.rbegin();
@@ -560,7 +616,7 @@ void PBS2::computeImplicitConstraints(PBSNode* node, list<shared_ptr<Conflict>> 
             getLowerPriorityAgents(ag_it, lower_pri_agents[conf->a1]);
         }
 
-        uint num_ic_a2_a1 = (uint) (higher_pri_agents[conf->a2].size()+1) * 
+        uint num_ic_a1_a2 = (uint) (higher_pri_agents[conf->a2].size()+1) * 
             (lower_pri_agents[conf->a1].size()+1);
         for (const int& h_ag : higher_pri_agents[conf->a2])
         {
@@ -568,25 +624,31 @@ void PBS2::computeImplicitConstraints(PBSNode* node, list<shared_ptr<Conflict>> 
             {
                 if (priority_graph[l_ag][h_ag])  // Reduce the IC that already exists
                 {
-                    num_ic_a2_a1 -= node->num_IC->at(l_ag).at(h_ag);
+                    num_ic_a1_a2 -= node->num_IC->at(l_ag).at(h_ag);
                 }
             }
         }
-        node->num_IC->at(conf->a1).at(conf->a2) = num_ic_a2_a1;
+        node->num_IC->at(conf->a1).at(conf->a2) = num_ic_a1_a2;
         // double val_a2_a1 = ic_ratio * (double)num_ic_a2_a1 +
         //     (1.0-ic_ratio) / (double)(lower_pri_agents[conf->a1].size()+1);
 
         // Assign the maximum to the current conflict
-        if (num_ic_a1_a2 > num_ic_a2_a1)
+        if (num_ic_a2_a1 > num_ic_a1_a2)
         {
-            conf->num_ic = num_ic_a1_a2;
-            conf->ll_calls = lower_pri_agents[conf->a2].size()+1;
+            conf->num_ic = num_ic_a2_a1;
+            // conf->ll_calls = lower_pri_agents[conf->a2].size()+1;
+            conf->ll_calls = paths[conf->a2]->size();
+            for (const int& _la_ : lower_pri_agents[conf->a2])
+                conf->ll_calls += paths[_la_]->size();
             std::swap(conf->a1, conf->a2);
         }
         else
         {
-            conf->num_ic = num_ic_a2_a1;
-            conf->ll_calls = lower_pri_agents[conf->a1].size()+1;
+            conf->num_ic = num_ic_a1_a2;
+            // conf->ll_calls = lower_pri_agents[conf->a1].size()+1;
+            conf->ll_calls = paths[conf->a1]->size();
+            for (const int& _la_ : lower_pri_agents[conf->a1])
+                conf->ll_calls += paths[_la_]->size();
         }
     }
     runtime_implicit_constraints += getDuration(t, steady_clock::now());

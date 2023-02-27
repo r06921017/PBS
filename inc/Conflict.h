@@ -26,7 +26,7 @@ struct Conflict
     int priority;
     uint num_ic;  // Maximum number of implicit constraints between a1->a2 and a2->a2
     uint ll_calls;
-    explicit Conflict(int a1=-1, int a2=-1, int priority=1, uint num_ic=0, uint ll_calls=0):
+    explicit Conflict(int a1=-1, int a2=-1, int priority=1, uint num_ic=0, uint ll_calls=1):
         a1(a1), a2(a2), priority(priority), num_ic(num_ic), ll_calls(ll_calls) {}
 };
 

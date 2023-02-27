@@ -14,14 +14,15 @@ protected:
     bool use_ic;
     double ic_ratio;
 
-    string getSolverName() const;
+    string getSolverName(void) const;
 
 	// high-level search
     bool generateRoot(void);
+    PBSNode* generateRoot(const PBSNode* node);
     bool generateChild(int child_id, PBSNode* parent, int low, int high);
     conflict_priority hasConflicts(int a1, int a2) const;
 	shared_ptr<Conflict> chooseConflict(const PBSNode &node) const;
-	PBSNode* selectNode();
+	PBSNode* selectNode(void);
     void computeImplicitConstraints(PBSNode* node, list<shared_ptr<Conflict>> conflicts,
         const vector<int>& topological_orders);
 };
