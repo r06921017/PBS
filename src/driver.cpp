@@ -38,10 +38,13 @@ int main(int argc, char** argv)
 
 		("sipp", po::value<bool>()->default_value(1), "using SIPPS as the low-level solver")
 		("opt", po::value<bool>()->default_value(0), "using optimal low-level SIPPS")
-		("solver", po::value<string>()->default_value("PBS"), "Which high-level solver to use")
-		("greedy", po::value<bool>()->default_value(0), "True if PBS chooses the child PT node with the lower number of conflicts")
-		("tr", po::value<bool>()->default_value(0), "using target reasoning")
-		("ic", po::value<bool>()->default_value(0), "using implicit constraint")
+		("solver", po::value<string>()->default_value("PBS"),
+			"Which high-level solver to use (PP, PBS, PBS2)")
+		("greedy", po::value<bool>()->default_value(0),
+			"True if PBS chooses the child PT node withthe lower number of conflicts (PBS only)")
+		("ma", po::value<bool>()->default_value(0), "use meta-agent for PBS or not (PBS only)")
+		("tr", po::value<bool>()->default_value(0), "using target reasoning (PBS2 only)")
+		("ic", po::value<bool>()->default_value(0), "using implicit constraint (PBS2 only)")
 		("alpha", po::value<double>()->default_value(1.0), "the ratio of using implicit constraint")
 		("rr", po::value<bool>()->default_value(0), "using random restart for PBS")
 		("rth", po::value<uint64_t>()->default_value(0), "threshold to random restart for PBS")
@@ -72,7 +75,7 @@ int main(int argc, char** argv)
 	{
 		PBS pbs(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>(), vm["opt"].as<bool>(),
 			vm["lh"].as<bool>(), vm["sh"].as<bool>(), vm["rr"].as<bool>(), vm["rth"].as<uint64_t>(),
-			vm["greedy"].as<bool>());
+			vm["greedy"].as<bool>(), vm["ma"].as<bool>());
 		// run
 		pbs.solve(vm["cutoffTime"].as<clock_t>());
 		if (vm.count("output"))

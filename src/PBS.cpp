@@ -7,9 +7,10 @@
 
 
 PBS::PBS(const Instance& instance, int screen, bool sipp, bool is_ll_opt,
-    bool use_LH, bool use_SH, bool use_rr, uint64_t rr_th, bool is_min_conf) :
-    screen(screen), num_of_agents(instance.getDefaultNumberOfAgents()), is_ll_opt(is_ll_opt),
-    use_LH(use_LH), use_SH(use_SH), use_rr(use_rr), rr_th(rr_th), is_min_conf(is_min_conf)
+    bool use_LH, bool use_SH, bool use_rr, uint64_t rr_th, bool is_min_conf, bool use_ma) :
+    screen(screen), num_of_agents(instance.getDefaultNumberOfAgents()),
+    is_ll_opt(is_ll_opt), use_LH(use_LH), use_SH(use_SH), use_rr(use_rr), rr_th(rr_th),
+    is_min_conf(is_min_conf), use_ma(use_ma)
 {
     steady_clock::time_point t = steady_clock::now();
     search_engines.resize(num_of_agents);
@@ -52,6 +53,14 @@ PBS::PBS(const Instance& instance, int screen, bool sipp, bool is_ll_opt,
     else
     {
         std::random_shuffle(init_agents.begin(), init_agents.end());
+    }
+
+    // Initialize variables for analyzing per iteration
+    if (screen > 2)
+    {
+        iter_sum_cost = make_shared<vector<int>>();
+        iter_sum_conflicts = make_shared<vector<int>>();
+        iter_ll_calls = make_shared<vector<int>>();
     }
 }
 
@@ -250,6 +259,10 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
         }
     }
 
+    if (use_ma)
+        computeMASize(node, cur_conflicts, topological_orders);
+
+    assert(node->conflicts.empty());
     for (shared_ptr<Conflict> c: cur_conflicts)
         node->conflicts.push(c);
 
@@ -278,6 +291,7 @@ bool PBS::findPathForSingleAgent(PBSNode& node, const set<int>& higher_agents, i
     //     exit(1);
     // }
     // assert(paths[a] != nullptr and !isSamePath(*paths[a], new_path));
+    node.ll_calls += 1;
     node.cost += (int)new_path.size() - (int)paths[a]->size();
     if (node.makespan >= paths[a]->size())
     {
@@ -652,6 +666,36 @@ void PBS::saveConflicts(const string &fileName) const
     output << "---" << endl;
 }
 
+void PBS::saveIterData(void) const
+{
+    if (iter_sum_cost == nullptr || iter_sum_conflicts == nullptr || iter_ll_calls == nullptr)
+    {
+        cout << "iteration data is empty!" << endl;
+        return;
+    }
+
+    ofstream stats;
+	stats.open("iteration_data.csv", std::ios::out);
+	if (!stats.is_open())
+	{
+		cout << "Failed to open file." << endl;
+        return;
+	}
+
+    stats << "iter_sum_cost,";
+    std::copy(iter_sum_cost->begin(), iter_sum_cost->end(), std::ostream_iterator<int>(stats, ","));
+    stats << endl;
+    stats << "iter_sum_conflicts,";
+    std::copy(iter_sum_conflicts->begin(), iter_sum_conflicts->end(), std::ostream_iterator<int>(stats, ","));
+    stats << endl;
+    stats << "iter_ll_calls,";
+    std::copy(iter_ll_calls->begin(), iter_ll_calls->end(), std::ostream_iterator<int>(stats, ","));
+    stats << endl;
+    stats.close();
+    return;
+}
+
+
 void PBS::printConflicts(const PBSNode &curr, int num)
 {
     int counter = 0;
@@ -672,6 +716,10 @@ string PBS::getSolverName() const
 bool PBS::terminate(PBSNode* curr)
 {
     runtime = getDuration(start, steady_clock::now());
+
+    if (screen > 2)
+        saveIterData();
+
 	if (curr->conflicts.empty())  // no conflicts, we find a solution
 	{
 		solution_found = true;
@@ -937,4 +985,76 @@ bool PBS::hasHigherPriority(int low, int high) const // return true if agent low
         }
     }
     return false;
+}
+
+void PBS::computeMASize(PBSNode* node, list<shared_ptr<Conflict>> conflicts,
+    const vector<int>& topological_orders)
+{
+    vector<set<int>> higher_pri_agents(num_of_agents);
+    vector<set<int>> lower_pri_agents(num_of_agents);
+
+    list<int>::reverse_iterator ag_rit;
+    list<int>::iterator ag_it;
+
+    steady_clock::time_point t = steady_clock::now();
+    for (shared_ptr<Conflict> conf : conflicts)
+    {
+        // Compute the connected components for priority a2 <- a1
+        if (higher_pri_agents[conf->a1].empty())
+        {
+            ag_rit = ordered_agents.rbegin();
+            std::advance(ag_rit, topological_orders[conf->a1]);
+            assert(*ag_rit == conf->a1);
+            getHigherPriorityAgents(ag_rit, higher_pri_agents[conf->a1]);
+        }
+
+        if (lower_pri_agents[conf->a2].empty())
+        {
+            ag_it = ordered_agents.begin();
+            std::advance(ag_it, num_of_agents - 1 - topological_orders[conf->a2]);
+            assert(*ag_it == conf->a2);
+            getLowerPriorityAgents(ag_it, lower_pri_agents[conf->a2]);
+        }
+
+        // Compute the connected components for priority a1 <- a2
+        if (higher_pri_agents[conf->a2].empty())
+        {
+            ag_rit = ordered_agents.rbegin();
+            std::advance(ag_rit, topological_orders[conf->a2]);
+            assert(*ag_rit == conf->a2);
+            getHigherPriorityAgents(ag_rit, higher_pri_agents[conf->a2]);
+        }
+
+        if (lower_pri_agents[conf->a1].empty())
+        {
+            ag_it = ordered_agents.begin();
+            std::advance(ag_it, num_of_agents - 1 - topological_orders[conf->a1]);
+            assert(*ag_it == conf->a1);
+            getLowerPriorityAgents(ag_it, lower_pri_agents[conf->a1]);
+        }
+
+        // Check whether this conflict is internal to meta-agent or not
+        set<int> intersect;
+        set_intersection(higher_pri_agents[conf->a1].begin(), higher_pri_agents[conf->a1].end(),
+            higher_pri_agents[conf->a2].begin(), higher_pri_agents[conf->a2].end(),
+            inserter(intersect, intersect.begin()));
+
+        if (intersect.empty())
+        {
+            set_intersection(lower_pri_agents[conf->a1].begin(), lower_pri_agents[conf->a1].end(),
+                lower_pri_agents[conf->a2].begin(), lower_pri_agents[conf->a2].end(),
+                inserter(intersect, intersect.begin()));
+        }
+
+        if (!intersect.empty())  // Internal conflict in a meta-agent
+            conf->priority = conflict_priority::TARGET;
+        else  // External conflict in a meta-agent
+            conf->priority = conflict_priority::NORMAL;
+
+        conf->num_ic = (uint) (higher_pri_agents[conf->a1].size() + 
+            higher_pri_agents[conf->a2].size() +
+            lower_pri_agents[conf->a1].size() +
+            lower_pri_agents[conf->a2].size());
+    }
+    runtime_implicit_constraints += getDuration(t, steady_clock::now());
 }

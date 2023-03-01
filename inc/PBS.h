@@ -31,7 +31,7 @@ public:
 
 	PBS(const Instance& instance, int screen, bool sipp=true, bool is_ll_opt=false,
 		bool use_LH=false, bool use_SH=false, bool use_rr=false, uint64_t rr_th=0, 
-		bool is_min_conf=false);
+		bool is_min_conf=false, bool use_ma=false);
 	~PBS();
 
 	// set params
@@ -59,6 +59,7 @@ protected:
 	bool use_LH;
     bool use_SH;
 	bool use_rr;
+	bool use_ma;
     uint64_t rr_th;
 	bool is_min_conf;
 
@@ -69,6 +70,11 @@ protected:
 	list<PBSNode*> allNodes_table;
     list<int> ordered_agents;  // ordered from high priority agents to low priority agents
     vector<vector<bool>> priority_graph; // [i][j] = true indicates that i is lower than j
+
+	// For analysis per iteration
+    std::shared_ptr<vector<int>> iter_sum_cost = nullptr;
+    std::shared_ptr<vector<int>> iter_sum_conflicts = nullptr;
+    std::shared_ptr<vector<int>> iter_ll_calls = nullptr;
 
     virtual string getSolverName() const;
 	inline int getAgentLocation(int agent_id, size_t timestep) const;
@@ -109,4 +115,9 @@ protected:
 	static void printConflicts(const PBSNode &curr, int num=INT_MAX);
     void printPriorityGraph() const;
 	void printPaths() const;
+	void saveIterData(void) const;
+
+private:
+	void computeMASize(PBSNode* node, list<shared_ptr<Conflict>> conflicts,
+		const vector<int>& topological_orders);
 };

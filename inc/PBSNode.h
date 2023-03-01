@@ -12,6 +12,7 @@ public:
 	// list<shared_ptr<Constraint>> constraints; // new constraint set for mvc
     list< pair< int, Path> > paths; // new paths
     int cost = 0; // sum of costs
+    uint ll_calls = 0;
     bool is_expanded = false;
 
 	size_t depth = 0; // depath of this CT node

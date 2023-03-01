@@ -31,6 +31,12 @@ bool PBS2::solve(clock_t time_limit)
         while (!open_list.empty())
         {
             auto curr = selectNode();
+            if (screen > 2)
+            {
+                iter_sum_cost->push_back(curr->cost);
+                iter_sum_conflicts->push_back(curr->conflicts.size());
+                iter_ll_calls->push_back(curr->ll_calls);
+            }
 
             if (terminate(curr)) break;
 
@@ -155,6 +161,7 @@ bool PBS2::generateRoot(void)
         paths[_ag_] = &root->paths.back().second;
         root->makespan = max(root->makespan, new_path.size() - 1);
         root->cost += (int)new_path.size() - 1;
+        root->ll_calls += 1;
     }
 
     // Find all conflicts among paths
