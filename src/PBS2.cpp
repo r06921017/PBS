@@ -31,12 +31,14 @@ bool PBS2::solve(clock_t time_limit)
         while (!open_list.empty())
         {
             auto curr = selectNode();
-            if (screen > 2)
+            #ifndef NDEBUG
+            if (screen > 1)
             {
                 iter_sum_cost->push_back(curr->cost);
                 iter_sum_conflicts->push_back(curr->conflicts.size());
                 iter_ll_calls->push_back(curr->ll_calls);
             }
+            #endif
 
             if (terminate(curr)) break;
 
@@ -50,6 +52,10 @@ bool PBS2::solve(clock_t time_limit)
 
                 // assert(!hasHigherPriority(curr->conflict->a1, curr->conflict->a2) and 
                 //     !hasHigherPriority(curr->conflict->a2, curr->conflict->a1) );
+                // #ifndef NDEBUG
+                // if (screen > 1)
+                //     printConflicts(*curr);
+                // #endif
 
                 t1 = steady_clock::now();
                 generateChild(0, curr, curr->conflict->a1, curr->conflict->a2);
@@ -88,18 +94,11 @@ bool PBS2::solve(clock_t time_limit)
                         stack<PBSNode*>().swap(open_list);  // clear the open_list
                         pushNode(new_root);
                         dummy_start = new_root;
+                        continue;
+
+                        // Restart from scratch
                         // std::random_shuffle(init_agents.begin(), init_agents.end());
                         // break;  // leave the while loop of open_list.empty
-                        #ifndef NDEBUG
-                        assert(open_list.size() == 1);
-                        assert(allNodes_table.size() == 1);
-                        if (screen > 1)
-                        {
-                            printConflicts(*new_root);
-                            cout << endl;
-                        }
-                        #endif
-                        continue;
                     }
                 }
                 curr->clear();

@@ -1,4 +1,4 @@
-exp_path: "/home/rdaneel/PBS_results/"
+exp_path: "/home/rdaneel/PBS_results_SOCS2023/trial1/"
 ins_num: 25
 time_limit: 60
 time_gap: 15
@@ -119,8 +119,8 @@ solvers:
     marker: "d"
     zorder: 4
 
-  - name: "PBS2-LH-PE-TR-IC0.8-RR200"
-    label: "GPBS(PE,TR,IC,RR)"
+  - name: "PBS2-PE-TR-IC-RR0"
+    label: "GPBS(PE,TR,IC,SR)"
     color: "red"
     marker: "^"
-    zorder: 5
+    zorder: 6

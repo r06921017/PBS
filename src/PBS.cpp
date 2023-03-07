@@ -37,7 +37,7 @@ PBS::PBS(const Instance& instance, int screen, bool sipp, bool is_ll_opt,
         for (const auto& _ag_ : init_agents)
         {
             // Use the individual shortest path to sort priorities
-            int path_size = search_engines[_ag_]->my_heuristic[search_engines[_ag_]->goal_location];
+            int path_size = search_engines[_ag_]->my_heuristic[search_engines[_ag_]->start_location];
             init_path_size.emplace_back(_ag_, path_size);
         }
 
@@ -56,12 +56,14 @@ PBS::PBS(const Instance& instance, int screen, bool sipp, bool is_ll_opt,
     }
 
     // Initialize variables for analyzing per iteration
-    if (screen > 2)
+    #ifndef NDEBUG
+    if (screen > 1)
     {
         iter_sum_cost = make_shared<vector<int>>();
         iter_sum_conflicts = make_shared<vector<int>>();
         iter_ll_calls = make_shared<vector<int>>();
     }
+    #endif
 }
 
 
@@ -717,8 +719,10 @@ bool PBS::terminate(PBSNode* curr)
 {
     runtime = getDuration(start, steady_clock::now());
 
-    if (screen > 2)
+    #ifndef NDEBUG
+    if (screen > 1)
         saveIterData();
+    #endif
 
 	if (curr->conflicts.empty())  // no conflicts, we find a solution
 	{

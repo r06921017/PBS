@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import util
 import numpy as np
 
+LARGE_MAPS = ['den520d','warehouse-10-20-10-2-1','warehouse-20-40-10-2-1','warehouse-20-40-10-2-2']
+
 class DataProcessor:
     def __init__(self, in_config) -> None:
         self.config: Dict = dict()
@@ -44,7 +46,7 @@ class DataProcessor:
                                         '#high-level generated': 'Number of generated HL Nodes',
                                         '#high-level expanded': 'Number expanded HL nodes (K)',
                                         '#pathfinding': 'Number of replaned Agents', # (K)
-                                        '#low-level search calls': 'Number of calls (K)',  #  
+                                        '#low-level search calls': 'Number of calls (K)',
                                         '#backtrack': 'Number of backtrackings', # (K)
                                         '#restarts': 'Number of restarts', # (K)
                                         'num_total_conf': 'Number of total Conflicts (K)',
@@ -107,7 +109,8 @@ class DataProcessor:
                                                            scen, ag_num, solver['name'])
                         for _, row in data_frame.iterrows():
                             if in_index  == 'succ':
-                                if row['solution cost'] >= 0:
+                                if row['solution cost'] >= 0 and \
+                                    row['runtime'] <= self.config['time_limit']:
                                     tmp_val = 1
                                 else:
                                     tmp_val = 0
@@ -127,7 +130,7 @@ class DataProcessor:
                                 else:
                                     tmp_val = row['num_0child']
 
-                            elif row[in_index] < 0: # or row['solution cost']==-1:
+                            elif row[in_index] <= 0 or row['solution cost']==-1:
                                 tmp_val = np.inf
 
                             else:
@@ -283,7 +286,7 @@ class DataProcessor:
 
             _val_ = in_result[solver['name']][in_map['name']]['val']
             _ci_  = in_result[solver['name']][in_map['name']]['ci']
-            if self.config['set_shift'] > 0:
+            if abs(self.config['set_shift']) > 0:
                 _num_ = [_n_ + plt_rng*s_idx for _n_ in _num_]
 
             if in_map_idx == 0:
@@ -363,6 +366,7 @@ class DataProcessor:
             in_axs.axes.set_yticks(y_list)
 
         elif y_index == '#low-level expanded' or y_index == '#low-level generated':
+            # in_axs.set_yscale('log')
             label_scale = 1000000
             tmp_range = 5
             scale = label_scale * tmp_range
@@ -390,8 +394,7 @@ class DataProcessor:
             y_index =='#restarts' or y_index == 'solution cost':
             label_scale = 1000
 
-            if in_map['name'] == 'den520d' or in_map['name'] == 'warehouse-10-20-10-2-1' or \
-                in_map['name'] == 'warehouse-20-40-10-2-1':
+            if in_map['name'] in LARGE_MAPS:
                 tmp_range = 80
             else:
                 tmp_range = 20
