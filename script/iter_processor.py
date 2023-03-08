@@ -6,12 +6,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Read files
-TEXT_SIZE=24
+TEXT_SIZE=28
 LINE_WIDTH=2.5
+DATA_PATH="/home/rdaneel/PBS/local/maze-32-32-2/"
 file_names = ["RR_iteration_data.csv", "SR_iteration_data.csv"]
 iter_data = {"sum_cost": dict(), "sum_conflicts": dict(), "ll_calls":dict(), "acc_ll_calls":dict()}
 for fn in file_names:
-    with open(fn, "r") as fin:
+    with open(DATA_PATH+fn, "r") as fin:
         line = fin.readline().rstrip("\n").split(",")
         line.pop(0)
         line.pop(-1)
@@ -33,7 +34,7 @@ iter_data["sum_cost"][LNS_FILE] = list()
 iter_data["sum_conflicts"][LNS_FILE] = list()
 iter_data["ll_calls"][LNS_FILE] = list()
 iter_data["acc_ll_calls"][LNS_FILE] = list()
-with open(LNS_FILE, "r") as fin:
+with open(DATA_PATH+LNS_FILE, "r") as fin:
     fin.readline()
     for line in fin.readlines():
         line = line.rstrip("\n").split(",")
@@ -102,17 +103,18 @@ axs[1].grid(axis="y")
 
 axs[1].set_xlabel("Iteration")
 axs[0].set_ylabel("Number of \ncolliding pairs")
-axs[1].set_ylabel("Accumulative number \nof replans (log)")
+axs[1].set_ylabel("Accumulative\nnumber of calls")
 
-axs[0].legend(
+leg = axs[0].legend(
     loc="upper center",
     bbox_to_anchor= (0.45, 1.25),
     borderpad=0.1,
     handletextpad=0.1,
     labelspacing=0.1,
-    columnspacing=1.0,
+    columnspacing=0.5,
     ncol=3,
-    fontsize=TEXT_SIZE
+    fontsize=TEXT_SIZE,
+    handlelength=0.5,
 )
 axs[0].set_yscale('log')
 axs[1].set_yscale('log')

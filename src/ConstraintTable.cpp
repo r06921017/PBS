@@ -2,11 +2,11 @@
 
 int ConstraintTable::getMaxTimestep() const // everything is static after (\geq) the max timestep
 {
-    int rst = max(max(ct_max_timestep, cat_max_timestep), length_min+1);
+    int rst = max(max(ct_max_timestep, cat_max_timestep), length_min);
     if (length_max < MAX_TIMESTEP)
-        rst = max(rst, length_max+1);
+        rst = max(rst, length_max);
     if (!landmarks.empty())
-        rst = max(rst, landmarks.rbegin()->first+1);
+        rst = max(rst, landmarks.rbegin()->first);
     return rst;
 }
 int ConstraintTable::getLastCollisionTimestep(int location) const
@@ -97,7 +97,7 @@ void ConstraintTable::insert2CAT(const Path& path)
             cat[loc].resize(timestep + 1, false);
         cat[loc][timestep] = true;
     }
-    cat_max_timestep = max(cat_max_timestep, (int)path.size());
+    cat_max_timestep = max(cat_max_timestep, (int)path.size() - 1);
 }
 
 

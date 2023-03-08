@@ -139,17 +139,44 @@ bool PBS2::generateRoot(void)
     PBSNode* root = new PBSNode();
 	root->cost = 0;
 	root->depth = 0;
-    set<int> higher_agents;
-    for (const int& _ag_ : init_agents)  // Find a path for individual agents
+    vector<int> remain_agents;
+    ConstraintTable init_constraint_table(search_engines[0]->instance.num_of_cols,
+        search_engines[0]->instance.map_size);
+    for (size_t i = 0; i < init_agents.size(); i++)  // Find a path for individual agents
     {
-        Path new_path;
-        if (is_ll_opt)
-            new_path = search_engines[_ag_]->findOptimalPath(higher_agents, paths, _ag_);
-        else
-            new_path = search_engines[_ag_]->findPath(higher_agents, paths, _ag_);
+        int _ag_ = init_agents[i];
+        Path new_path = search_engines[_ag_]->findPath(init_constraint_table);
         runtime_path_finding += search_engines[_ag_]->runtime;
         runtime_build_CT += search_engines[_ag_]->runtime_build_CT;
-        runtime_build_CAT += search_engines[_ag_]->runtime_build_CAT;        
+        runtime_build_CAT += search_engines[_ag_]->runtime_build_CAT;
+        if (new_path.empty())
+        {
+            for (int j=i; j < num_of_agents; j++)
+                remain_agents.push_back(init_agents[j]);
+            break;
+        }
+        else
+        {
+            root->paths.emplace_back(_ag_, new_path);
+            paths[_ag_] = &root->paths.back().second;
+            init_constraint_table.insert2CT(*paths[_ag_]);
+            root->makespan = max(root->makespan, new_path.size() - 1);
+            root->cost += (int)new_path.size() - 1;
+            root->ll_calls += 1;
+        }
+    }
+
+    init_constraint_table.clear();
+    for (const pair<int, Path>& _p_ : root->paths)
+        init_constraint_table.insert2CAT(_p_.second);
+
+    std::random_shuffle(remain_agents.begin(), remain_agents.end());
+    for (const int& _ag_ : remain_agents)
+    {
+        Path new_path = search_engines[_ag_]->findPath(init_constraint_table);
+        runtime_path_finding += search_engines[_ag_]->runtime;
+        runtime_build_CT += search_engines[_ag_]->runtime_build_CT;
+        runtime_build_CAT += search_engines[_ag_]->runtime_build_CAT;
         if (new_path.empty())
         {
             cout << "No path exists for agent " << _ag_ << endl;
@@ -158,10 +185,41 @@ bool PBS2::generateRoot(void)
 
         root->paths.emplace_back(_ag_, new_path);
         paths[_ag_] = &root->paths.back().second;
+        init_constraint_table.insert2CAT(new_path);
         root->makespan = max(root->makespan, new_path.size() - 1);
         root->cost += (int)new_path.size() - 1;
         root->ll_calls += 1;
     }
+
+    // vector<int> remain_agents(init_agents);
+    // while (true)
+    // {
+    //     vector<int>::iterator ait = remain_agents.begin();
+    //     while (ait != remain_agents.end())  // Find a path for individual agents
+    //     {
+    //         int _ag_ = *ait;
+    //         Path new_path = search_engines[_ag_]->findPath(init_constraint_table);
+    //         runtime_path_finding += search_engines[_ag_]->runtime;
+    //         runtime_build_CT += search_engines[_ag_]->runtime_build_CT;
+    //         runtime_build_CAT += search_engines[_ag_]->runtime_build_CAT;        
+    //         if (new_path.empty())
+    //             break;
+
+    //         root->paths.emplace_back(_ag_, new_path);
+    //         paths[_ag_] = &root->paths.back().second;
+    //         init_constraint_table.insert2CT(*paths[_ag_]);
+    //         init_constraint_table.insert2CAT(*paths[_ag_]);
+    //         root->makespan = max(root->makespan, new_path.size() - 1);
+    //         root->cost += (int)new_path.size() - 1;
+    //         root->ll_calls += 1;
+    //         ait = remain_agents.erase(ait);
+    //     }
+
+    //     if (remain_agents.empty())
+    //         break;
+    //     init_constraint_table.clearCT();
+    //     std::random_shuffle(remain_agents.begin(), remain_agents.end());
+    // }
 
     // Find all conflicts among paths
     steady_clock::time_point t = steady_clock::now();
@@ -270,8 +328,8 @@ PBSNode* PBS2::generateRoot(const PBSNode* node)
     for (shared_ptr<Conflict> conf : node->conflicts)
     {
         conf->num_ic = 0;
-        // conf->ll_calls = 1;
-        conf->ll_calls = paths[conf->a1]->size();
+        conf->ll_calls = 1;
+        // conf->ll_calls = paths[conf->a1]->size();
         root->conflicts.push(conf);
     }
 
@@ -642,19 +700,19 @@ void PBS2::computeImplicitConstraints(PBSNode* node, list<shared_ptr<Conflict>> 
         if (num_ic_a2_a1 > num_ic_a1_a2)
         {
             conf->num_ic = num_ic_a2_a1;
-            // conf->ll_calls = lower_pri_agents[conf->a2].size()+1;
-            conf->ll_calls = paths[conf->a2]->size();
-            for (const int& _la_ : lower_pri_agents[conf->a2])
-                conf->ll_calls += paths[_la_]->size();
+            conf->ll_calls = lower_pri_agents[conf->a2].size()+1;
+            // conf->ll_calls = paths[conf->a2]->size();
+            // for (const int& _la_ : lower_pri_agents[conf->a2])
+            //     conf->ll_calls += paths[_la_]->size();
             std::swap(conf->a1, conf->a2);
         }
         else
         {
             conf->num_ic = num_ic_a1_a2;
-            // conf->ll_calls = lower_pri_agents[conf->a1].size()+1;
-            conf->ll_calls = paths[conf->a1]->size();
-            for (const int& _la_ : lower_pri_agents[conf->a1])
-                conf->ll_calls += paths[_la_]->size();
+            conf->ll_calls = lower_pri_agents[conf->a1].size()+1;
+            // conf->ll_calls = paths[conf->a1]->size();
+            // for (const int& _la_ : lower_pri_agents[conf->a1])
+            //     conf->ll_calls += paths[_la_]->size();
         }
     }
     runtime_implicit_constraints += getDuration(t, steady_clock::now());
