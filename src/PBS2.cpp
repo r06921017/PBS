@@ -166,32 +166,37 @@ bool PBS2::generateRoot(void)
         }
     }
 
-    init_constraint_table.clear();
-    for (const pair<int, Path>& _p_ : root->paths)
-        init_constraint_table.insert2CAT(_p_.second);
-
-    std::random_shuffle(remain_agents.begin(), remain_agents.end());
-    for (const int& _ag_ : remain_agents)
+    if (!remain_agents.empty())
     {
-        Path new_path = search_engines[_ag_]->findPath(init_constraint_table);
-        runtime_path_finding += search_engines[_ag_]->runtime;
-        runtime_build_CT += search_engines[_ag_]->runtime_build_CT;
-        runtime_build_CAT += search_engines[_ag_]->runtime_build_CAT;
-        if (new_path.empty())
-        {
-            cout << "No path exists for agent " << _ag_ << endl;
-            return false;
-        }
+        init_constraint_table.clear();
+        for (const pair<int, Path>& _p_ : root->paths)
+            init_constraint_table.insert2CAT(_p_.second);
 
-        root->paths.emplace_back(_ag_, new_path);
-        paths[_ag_] = &root->paths.back().second;
-        init_constraint_table.insert2CAT(new_path);
-        root->makespan = max(root->makespan, new_path.size() - 1);
-        root->cost += (int)new_path.size() - 1;
-        root->ll_calls += 1;
+        std::random_shuffle(remain_agents.begin(), remain_agents.end());
+        for (const int& _ag_ : remain_agents)
+        {
+            Path new_path = search_engines[_ag_]->findPath(init_constraint_table);
+            runtime_path_finding += search_engines[_ag_]->runtime;
+            runtime_build_CT += search_engines[_ag_]->runtime_build_CT;
+            runtime_build_CAT += search_engines[_ag_]->runtime_build_CAT;
+            if (new_path.empty())
+            {
+                cout << "No path exists for agent " << _ag_ << endl;
+                return false;
+            }
+
+            root->paths.emplace_back(_ag_, new_path);
+            paths[_ag_] = &root->paths.back().second;
+            init_constraint_table.insert2CAT(new_path);
+            root->makespan = max(root->makespan, new_path.size() - 1);
+            root->cost += (int)new_path.size() - 1;
+            root->ll_calls += 1;
+        }
     }
 
     // vector<int> remain_agents(init_agents);
+    // ConstraintTable init_constraint_table(search_engines[0]->instance.num_of_cols,
+    //     search_engines[0]->instance.map_size);
     // while (true)
     // {
     //     vector<int>::iterator ait = remain_agents.begin();
