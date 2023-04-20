@@ -11,8 +11,8 @@ from tkinter import Tk, Canvas, Label, mainloop
 import time
 import yaml
 
-COLORS: List[str] = ["deepskyblue", "orange", "green", "purple", "pink",
-                     "yellow", "blue", "violet", "tomato", "yellowgreen",
+COLORS: List[str] = ["deepskyblue", "royalblue", "orange", "peru", "pink",
+                     "yellow", "green", "violet", "tomato", "yellowgreen",
                      "cyan", "brown", "olive", "gray", "crimson"]
 
 class Action(Enum):
@@ -72,7 +72,7 @@ class MAPFRenderer:
         self.canvas.pack(side="bottom", pady=5)
         self.render_env()
         self.render_static_positions(self.goal_loc)
-        self.render_positions()
+        # self.render_positions()
         self.canvas.update()
         time.sleep(self.config["delay"]*4)
 
@@ -81,11 +81,12 @@ class MAPFRenderer:
         if loc is None:
             loc = self.cur_loc
         for _ag_ in range(self.num_of_agents):
+            color_idx = 2  if _ag_ < 150 else 3
             self.canvas.create_rectangle(loc[_ag_][0] * self.tile_size,
                                          loc[_ag_][1] * self.tile_size,
                                          (loc[_ag_][0]+1) * self.tile_size,
                                          (loc[_ag_][1]+1) * self.tile_size,
-                                         fill=COLORS[6],
+                                         fill=COLORS[color_idx],
                                          outline="")
 
             # self.canvas.create_oval(loc[_ag_][0] * self.tile_size,
@@ -100,7 +101,7 @@ class MAPFRenderer:
                                         (loc[_ag_][1]+0.5)*self.tile_size,
                                         text=str(_ag_+1),
                                         fill="black",
-                                        font=("Arial", int(self.tile_size*0.8)))
+                                        font=("Arial", int(self.tile_size*0.5)))
 
 
     def render_env(self):
@@ -119,11 +120,12 @@ class MAPFRenderer:
             loc = self.cur_loc
 
         for _ag_ in range(self.num_of_agents):
+            color_idx = 0 if _ag_ < 90 else 2
             agent = self.canvas.create_oval(loc[_ag_][0] * self.tile_size,
                                             loc[_ag_][1] * self.tile_size,
                                             (loc[_ag_][0]+1) * self.tile_size,
                                             (loc[_ag_][1]+1) * self.tile_size,
-                                            fill=COLORS[0],
+                                            fill=COLORS[color_idx],
                                             outline="")
             self.agents.append(agent)
 
@@ -132,7 +134,7 @@ class MAPFRenderer:
                                                  (loc[_ag_][1]+0.5)*self.tile_size,
                                                  text=str(_ag_+1),
                                                  fill="black",
-                                                 font=("Arial", int(self.tile_size*0.8)))
+                                                 font=("Arial", int(self.tile_size*0.6)))
                 self.agent_texts.append(ag_idx)
 
 

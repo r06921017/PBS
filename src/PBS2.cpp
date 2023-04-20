@@ -87,7 +87,7 @@ bool PBS2::solve(clock_t time_limit)
                         num_restart ++;
                         local_num_backtrack = 0;
 
-                        // Only restart the Priority Graph
+                        // Only restart the Priority Graph (soft restart)
                         update(curr);
                         PBSNode* new_root = generateRoot(curr);
                         clear();
@@ -139,6 +139,8 @@ bool PBS2::generateRoot(void)
     PBSNode* root = new PBSNode();
 	root->cost = 0;
 	root->depth = 0;
+
+    // This is for the large map
     vector<int> remain_agents;
     ConstraintTable init_constraint_table(search_engines[0]->instance.num_of_cols,
         search_engines[0]->instance.map_size);
@@ -194,6 +196,7 @@ bool PBS2::generateRoot(void)
         }
     }
 
+    // Repeated PP (not good)
     // vector<int> remain_agents(init_agents);
     // ConstraintTable init_constraint_table(search_engines[0]->instance.num_of_cols,
     //     search_engines[0]->instance.map_size);
@@ -213,7 +216,6 @@ bool PBS2::generateRoot(void)
     //         root->paths.emplace_back(_ag_, new_path);
     //         paths[_ag_] = &root->paths.back().second;
     //         init_constraint_table.insert2CT(*paths[_ag_]);
-    //         init_constraint_table.insert2CAT(*paths[_ag_]);
     //         root->makespan = max(root->makespan, new_path.size() - 1);
     //         root->cost += (int)new_path.size() - 1;
     //         root->ll_calls += 1;
@@ -222,7 +224,6 @@ bool PBS2::generateRoot(void)
 
     //     if (remain_agents.empty())
     //         break;
-    //     init_constraint_table.clearCT();
     //     std::random_shuffle(remain_agents.begin(), remain_agents.end());
     // }
 

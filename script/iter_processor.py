@@ -34,7 +34,7 @@ iter_data["sum_cost"][LNS_FILE] = list()
 iter_data["sum_conflicts"][LNS_FILE] = list()
 iter_data["ll_calls"][LNS_FILE] = list()
 iter_data["acc_ll_calls"][LNS_FILE] = list()
-with open(DATA_PATH+LNS_FILE, "r") as fin:
+with open(DATA_PATH+LNS_FILE, encoding="UTF-8", mode="r") as fin:
     fin.readline()
     for line in fin.readlines():
         line = line.rstrip("\n").split(",")
@@ -50,9 +50,11 @@ for fn in file_names:
         curr_sum += _ele_
         iter_data["acc_ll_calls"][fn].append(curr_sum)
 
-max_size = max(  # len(iter_data["sum_conflicts"][file_names[0]]),
-               len(iter_data["sum_conflicts"][file_names[1]]),
-               len(iter_data["sum_conflicts"][file_names[2]]))
+TARGET_OBJECTIVE = "sum_cost"
+# TARGET_OBJECTIVE = "sum_conflicts"
+max_size = max(len(iter_data[TARGET_OBJECTIVE][file_names[0]]),
+               len(iter_data[TARGET_OBJECTIVE][file_names[1]]),
+               len(iter_data[TARGET_OBJECTIVE][file_names[2]]))
 for fn in file_names:
     if len(iter_data["sum_cost"][fn]) < max_size:
         for _ in range(0, max_size-len(iter_data["sum_cost"][fn])):
@@ -77,15 +79,15 @@ plt.rcParams.update({'font.size': TEXT_SIZE})
 fig, axs = plt.subplots(nrows=2, ncols=1, figsize=(12,9), dpi=80, facecolor='w', edgecolor='k')
 
 SHOW_SIZE = max_size
-axs[0].plot(range(1,SHOW_SIZE+1), iter_data["sum_conflicts"][file_names[2]][:SHOW_SIZE],
+axs[0].plot(range(1,SHOW_SIZE+1), iter_data[TARGET_OBJECTIVE][file_names[2]][:SHOW_SIZE],
             label="MAPF-LNS2", color="green", linewidth=LINE_WIDTH)
-axs[0].plot(range(1,SHOW_SIZE+1), iter_data["sum_conflicts"][file_names[0]][:SHOW_SIZE],
+axs[0].plot(range(1,SHOW_SIZE+1), iter_data[TARGET_OBJECTIVE][file_names[0]][:SHOW_SIZE],
             label="GPBS(PE,TR,IC,RR)", color="blue", linewidth=LINE_WIDTH+1)
-axs[0].plot(range(1,SHOW_SIZE+1), iter_data["sum_conflicts"][file_names[1]][:SHOW_SIZE],
+axs[0].plot(range(1,SHOW_SIZE+1), iter_data[TARGET_OBJECTIVE][file_names[1]][:SHOW_SIZE],
             label="GPBS(PE,TR,IC,SR)", color="red", linewidth=LINE_WIDTH)
 axs[0].axhline(y = 0, color = 'grey', linewidth=0.5)
 
-# num_conf = iter_data["sum_conflicts"][file_names[2]][SHOW_SIZE-1]
+# num_conf = iter_data[TARGET_OBJECTIVE][file_names[2]][SHOW_SIZE-1]
 # tmp_text = "MAPF-LNS2 timeout,\n" + str(num_conf) + " pairs left"
 # axs[0].annotate(tmp_text, color="black", xy=(SHOW_SIZE, num_conf+1), xytext=(1200, 150),
 #                 horizontalalignment='right',
@@ -102,12 +104,17 @@ axs[0].grid(axis="y")
 axs[1].grid(axis="y")
 
 axs[1].set_xlabel("Iteration")
-axs[0].set_ylabel("Number of \ncolliding pairs")
+Y_LABEL = ""
+if TARGET_OBJECTIVE == "sum_conflicts":
+    Y_LABEL = "Number of \nconflicting pairs"
+if TARGET_OBJECTIVE == "sum_cost":
+    Y_LABEL = "SOC"
+axs[0].set_ylabel(Y_LABEL)
 axs[1].set_ylabel("Accumulative\nnumber of calls")
 
 leg = axs[0].legend(
     loc="upper center",
-    bbox_to_anchor= (0.45, 1.25),
+    bbox_to_anchor= (0.48, 1.25),
     borderpad=0.1,
     handletextpad=0.1,
     labelspacing=0.1,

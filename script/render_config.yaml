@@ -1,7 +1,7 @@
 map_file: "/home/rdaneel/mapf_benchmark/mapf-map/maze-32-32-2.map"
-scen_file: "/home/rdaneel/mapf_benchmark/scen-random/maze-32-32-2-random-2.scen"
+scen_file: "/home/rdaneel/mapf_benchmark/scen-random/maze-32-32-2-random-21.scen"
 path_file: "/home/rdaneel/PBS/result_path.txt"
-num_of_agents: 5
+num_of_agents: 200
 pixel_per_move: 5
 moves: 5
 plot_ag_num: true

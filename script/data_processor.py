@@ -803,7 +803,8 @@ if __name__ == '__main__':
     # Create data processor
     data_processor = DataProcessor(args.config)
 
-    # data_processor.get_avg_vals(y_index='#low-level expanded')
+    # data_processor.get_avg_vals(y_index='#low-level expanded')  # LL expanded nodes
+    # data_processor.get_avg_vals(y_index='#low-level search calls')  #  LL runs
     # data_processor.get_avg_vals(y_index='#high-level expanded')
     # data_processor.get_avg_vals(y_index='succ')
     # data_processor.get_avg_vals_all(y_index='succ')
