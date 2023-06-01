@@ -50,8 +50,8 @@ for fn in file_names:
         curr_sum += _ele_
         iter_data["acc_ll_calls"][fn].append(curr_sum)
 
-TARGET_OBJECTIVE = "sum_cost"
-# TARGET_OBJECTIVE = "sum_conflicts"
+# TARGET_OBJECTIVE = "sum_cost"
+TARGET_OBJECTIVE = "sum_conflicts"
 max_size = max(len(iter_data[TARGET_OBJECTIVE][file_names[0]]),
                len(iter_data[TARGET_OBJECTIVE][file_names[1]]),
                len(iter_data[TARGET_OBJECTIVE][file_names[2]]))
@@ -110,7 +110,7 @@ if TARGET_OBJECTIVE == "sum_conflicts":
 if TARGET_OBJECTIVE == "sum_cost":
     Y_LABEL = "SOC"
 axs[0].set_ylabel(Y_LABEL)
-axs[1].set_ylabel("Accumulative\nnumber of calls")
+axs[1].set_ylabel("Cumulative\nnumber of calls")
 
 leg = axs[0].legend(
     loc="upper center",

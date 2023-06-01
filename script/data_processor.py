@@ -40,23 +40,23 @@ class DataProcessor:
                                         'runtime': 'Runtime (sec)',
                                         'runtime of detecting conflicts': 'Runtiem of conflict detection (sec)',
                                         'runtime of path finding': 'Runtime of path finding (sec)',
-                                        'solution cost': 'SOC (K)',
-                                        '#low-level generated': 'Number of generated LL Nodes (M)',
-                                        '#low-level expanded': 'Number of expansions (M)',
+                                        'solution cost': 'SOC',
+                                        '#low-level generated': 'Number of generated LL Nodes',
+                                        '#low-level expanded': 'Number of expansions',
                                         '#high-level generated': 'Number of generated HL Nodes',
-                                        '#high-level expanded': 'Number expanded HL nodes (K)',
+                                        '#high-level expanded': 'Number expanded HL nodes',
                                         '#pathfinding': 'Number of replaned Agents', # (K)
-                                        '#low-level search calls': 'Number of calls (K)',
+                                        '#low-level search calls': 'Number of calls',
                                         '#backtrack': 'Number of backtrackings', # (K)
                                         '#restarts': 'Number of restarts', # (K)
-                                        'num_total_conf': 'Number of total Conflicts (K)',
-                                        'add': 'Sum (K)',
+                                        'num_total_conf': 'Number of total Conflicts',
+                                        'add': 'Sum',
                                         'sub': 'Subtraction',
                                         'mul': 'Multiplication',
                                         'div': 'Average number\nof expansions',
                                         'mod': 'Mod'}
         self.x_labels:Dict[str,str] = {'num': 'Number of agents',
-                                       'ins': 'Instance'}
+                                       'ins': 'MAPF Instance'}
 
     def get_subfig_pos(self, f_idx: int):
         """Transfer subplot index to 2-D position
@@ -818,9 +818,9 @@ if __name__ == '__main__':
     # data_processor.plot_fig(x_index='num', y_index='#backtrack')
     # data_processor.plot_fig(x_index='num', y_index='#pathfinding')
 
-    data_processor.plot_fig(x_index='ins', y_index='solution cost')
+    # data_processor.plot_fig(x_index='ins', y_index='solution cost')
     # data_processor.plot_fig(x_index='ins', y_index='#high-level generated')
-    # data_processor.plot_fig(x_index='ins', y_index='#low-level expanded')
+    data_processor.plot_fig(x_index='ins', y_index='#low-level expanded')
     # data_processor.plot_fig(x_index='ins', y_index='#backtrack')
     # data_processor.plot_fig(x_index='ins', y_index='#low-level search calls')
     # data_processor.plot_fig(x_index='ins', y_index='num_total_conf')
