@@ -1,7 +1,7 @@
-﻿/* Copyright (C) Jiaoyang Li
+﻿/* Copyright (C) Shao-Hung Chan
 * Unauthorized copying of this file, via any medium is strictly prohibited
 * Confidential
-* Written by Jiaoyang Li <jiaoyanl@usc.edu>, May 2020
+* Written by Shao-Hung Chan <shaohung@usc.edu>, Jul 2023
 */
 
 /*driver.cpp
@@ -10,8 +10,7 @@
 #include <boost/program_options.hpp>
 #include <boost/tokenizer.hpp>
 #include "PBS.h"
-#include "PBS2.h"
-// #include "PVCS.h"
+#include "GPBS.h"
 #include "PP.h"
 
 /* Main function */
@@ -39,14 +38,13 @@ int main(int argc, char** argv)
 		("sipp", po::value<bool>()->default_value(1), "using SIPPS as the low-level solver")
 		("opt", po::value<bool>()->default_value(0), "using optimal low-level SIPPS")
 		("solver", po::value<string>()->default_value("PBS"),
-			"Which high-level solver to use (PP, PBS, PBS2)")
+			"Which high-level solver to use (PP, PBS, GPBS)")
 		("greedy", po::value<bool>()->default_value(0),
 			"True if PBS chooses the child PT node withthe lower number of conflicts (PBS only)")
 		("ma", po::value<bool>()->default_value(0), "use meta-agent for PBS or not (PBS only)")
-		("tr", po::value<bool>()->default_value(0), "using target reasoning (PBS2 only)")
-		("ic", po::value<bool>()->default_value(0), "using implicit constraint (PBS2 only)")
-		("alpha", po::value<double>()->default_value(1.0), "the ratio of using implicit constraint")
-		("rr", po::value<bool>()->default_value(0), "using random restart for PBS")
+		("tr", po::value<bool>()->default_value(1), "using target reasoning (GPBS only)")
+		("ic", po::value<bool>()->default_value(1), "using implicit constraint (GPBS only)")
+		("rr", po::value<bool>()->default_value(1), "using random restart for PBS")
 		("rth", po::value<uint64_t>()->default_value(0), "threshold to random restart for PBS")
 		("lh", po::value<bool>()->default_value(0), "using LH heuristic for PP/PBS")
 		("sh", po::value<bool>()->default_value(0), "using SH heuristic for PP/PBS")
@@ -84,22 +82,22 @@ int main(int argc, char** argv)
 			pbs.savePaths(vm["outputPaths"].as<string>());
 		pbs.clearSearchEngines();
 	}
-	else if (vm["solver"].as<string>() == "PBS2")
+	else if (vm["solver"].as<string>() == "GPBS")
 	{
-		PBS2 pbs2(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>(), vm["opt"].as<bool>(),
+		GPBS gpbs(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>(), vm["opt"].as<bool>(),
 			vm["tr"].as<bool>(), vm["ic"].as<bool>(), vm["rr"].as<bool>(), vm["rth"].as<uint64_t>(),
 			vm["alpha"].as<double>(), vm["lh"].as<bool>(), vm["sh"].as<bool>());
 		// run
-		pbs2.solve(vm["cutoffTime"].as<clock_t>());
+		gpbs.solve(vm["cutoffTime"].as<clock_t>());
 		if (vm.count("output"))
-			pbs2.saveResults(vm["output"].as<string>(), vm["agents"].as<string>());
+			gpbs.saveResults(vm["output"].as<string>(), vm["agents"].as<string>());
 		if (vm.count("outputPaths"))
-			pbs2.savePaths(vm["outputPaths"].as<string>());
+			gpbs.savePaths(vm["outputPaths"].as<string>());
 		if (vm.count("outputConf"))
-			pbs2.saveConflicts(vm["outputConf"].as<string>());
+			gpbs.saveConflicts(vm["outputConf"].as<string>());
 		if (vm.count("outputPT"))
-			pbs2.saveCT(vm["outputPT"].as<string>());
-		pbs2.clearSearchEngines();
+			gpbs.saveCT(vm["outputPT"].as<string>());
+		gpbs.clearSearchEngines();
 	}
 	// else if (vm["solver"].as<string>() == "PVCS")
 	// {

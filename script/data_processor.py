@@ -810,6 +810,7 @@ if __name__ == '__main__':
     # data_processor.get_avg_vals_all(y_index='succ')
 
     # data_processor.plot_fig(x_index='num', y_index='succ')
+    # data_processor.plot_fig(x_index='num', y_index='runtime')
     # data_processor.plot_fig(x_index='num', y_index='runtime of path finding')
     # data_processor.plot_fig(x_index='num', y_index='#low-level search calls')
     # data_processor.plot_fig(x_index='num', y_index='#low-level expanded')
@@ -818,9 +819,9 @@ if __name__ == '__main__':
     # data_processor.plot_fig(x_index='num', y_index='#backtrack')
     # data_processor.plot_fig(x_index='num', y_index='#pathfinding')
 
-    # data_processor.plot_fig(x_index='ins', y_index='solution cost')
+    data_processor.plot_fig(x_index='ins', y_index='solution cost')
     # data_processor.plot_fig(x_index='ins', y_index='#high-level generated')
-    data_processor.plot_fig(x_index='ins', y_index='#low-level expanded')
+    # data_processor.plot_fig(x_index='ins', y_index='#low-level expanded')
     # data_processor.plot_fig(x_index='ins', y_index='#backtrack')
     # data_processor.plot_fig(x_index='ins', y_index='#low-level search calls')
     # data_processor.plot_fig(x_index='ins', y_index='num_total_conf')

@@ -1,10 +1,10 @@
 #pragma once
 #include "PBS.h"
 
-class PBS2 : public PBS
+class GPBS : public PBS
 {
 public:
-    PBS2(const Instance& instance, int screen, bool sipp, bool is_ll_opt=false, bool use_tr=false,
+    GPBS(const Instance& instance, int screen, bool sipp, bool is_ll_opt=false, bool use_tr=false,
         bool use_ic=false, bool use_rr=false,  uint64_t rr_th=0,
         double ic_ratio=1.0, bool use_LH=false, bool use_SH=false);
     bool solve(clock_t time_limit);

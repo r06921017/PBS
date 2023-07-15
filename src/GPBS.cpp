@@ -2,16 +2,16 @@
 #include <algorithm>
 #include <random>
 #include <chrono>
-#include "PBS2.h"
+#include "GPBS.h"
 #include "SIPP.h"
 #include "SpaceTimeAStar.h"
 
-PBS2::PBS2(const Instance& instance, int screen, bool sipp, bool is_ll_opt, bool use_tr,
+GPBS::GPBS(const Instance& instance, int screen, bool sipp, bool is_ll_opt, bool use_tr,
     bool use_ic, bool use_rr, uint64_t rr_th, double ic_ratio, bool use_LH, bool use_SH): 
     PBS(instance, screen, sipp, is_ll_opt, use_LH, use_SH, use_rr, rr_th), 
     use_tr(use_tr), use_ic(use_ic), ic_ratio(ic_ratio) {}
 
-bool PBS2::solve(clock_t time_limit)
+bool GPBS::solve(clock_t time_limit)
 {
     this->time_limit = time_limit;
 
@@ -108,7 +108,7 @@ bool PBS2::solve(clock_t time_limit)
     return solution_found;
 }
 
-PBSNode* PBS2::selectNode(void)
+PBSNode* GPBS::selectNode(void)
 {
 	PBSNode* curr = open_list.top();
     update(curr);
@@ -120,9 +120,9 @@ PBSNode* PBS2::selectNode(void)
 	return curr;
 }
 
-string PBS2::getSolverName(void) const
+string GPBS::getSolverName(void) const
 {
-    string sol_name = "PBS2";
+    string sol_name = "GPBS";
     if (use_tr)
         sol_name += "+TR";
     if (use_ic)
@@ -133,7 +133,7 @@ string PBS2::getSolverName(void) const
     return sol_name;
 }
 
-bool PBS2::generateRoot(void)
+bool GPBS::generateRoot(void)
 {
     paths = vector<Path*>(num_of_agents, nullptr);
     PBSNode* root = new PBSNode();
@@ -316,7 +316,7 @@ bool PBS2::generateRoot(void)
     return true;
 }
 
-PBSNode* PBS2::generateRoot(const PBSNode* node)
+PBSNode* GPBS::generateRoot(const PBSNode* node)
 {
     PBSNode* root = new PBSNode();
     root->cost = 0;
@@ -349,7 +349,7 @@ PBSNode* PBS2::generateRoot(const PBSNode* node)
     return root;
 }
 
-bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
+bool GPBS::generateChild(int child_id, PBSNode* parent, int low, int high)
 {
     assert(child_id == 0 or child_id == 1);
     parent->children[child_id] = new PBSNode(*parent);
@@ -581,7 +581,7 @@ bool PBS2::generateChild(int child_id, PBSNode* parent, int low, int high)
     return true;
 }
 
-conflict_priority PBS2::hasConflicts(int a1, int a2) const
+conflict_priority GPBS::hasConflicts(int a1, int a2) const
 {
 	int min_path_length = (int) (paths[a1]->size() < paths[a2]->size() ? paths[a1]->size() : paths[a2]->size());
     if (paths[a1]->size() != paths[a2]->size())
@@ -613,7 +613,7 @@ conflict_priority PBS2::hasConflicts(int a1, int a2) const
     return conflict_priority::NONE; // conflict-free
 }
 
-shared_ptr<Conflict> PBS2::chooseConflict(const PBSNode &node) const
+shared_ptr<Conflict> GPBS::chooseConflict(const PBSNode &node) const
 {
     if (node.conflicts.empty())
         return nullptr;
@@ -621,7 +621,7 @@ shared_ptr<Conflict> PBS2::chooseConflict(const PBSNode &node) const
     return out;
 }
 
-void PBS2::computeImplicitConstraints(PBSNode* node, list<shared_ptr<Conflict>> conflicts, 
+void GPBS::computeImplicitConstraints(PBSNode* node, list<shared_ptr<Conflict>> conflicts, 
     const vector<int>& topological_orders)
 {
     vector<set<int>> higher_pri_agents(num_of_agents);

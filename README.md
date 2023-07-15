@@ -1,5 +1,5 @@
 # Greedy PBS
-A suboptimal solver for Multi-Agent Path Finding
+A suboptimal solver for Multi-Agent Path Finding (MAPF)
 
 Priority-Based Search (PBS) is an efficient suboptimal algorithm for solving Multi-Agent Path Finding (MAPF).
 More details can be found in our paper at AAAI 2019 [1]. 
@@ -8,7 +8,7 @@ More details can be found in our paper at AAAI 2019 [1].
 The implementation provides a SIPP option that uses SIPPS [2] (instead of state-time A*) 
 on the low level of PBS to plan paths for agents.
 
-On top of that, we propose Greedy PBS (GPBS) with other improved techniques that aims to minimize the number of collisions during the search.
+On top of that, we propose Greedy PBS (GPBS) with other improved techniques that aims to minimize the number of collisions during the search. We also implement four enhancements to speed up the search: Partial Expansion (PE), Target Reasoning (TR), Induced Constraints (IC), and Soft Restart (SR).
 
 ## Usage
 The code requires the external library [boost](https://www.boost.org/).
@@ -36,16 +36,20 @@ make
 
 Then, you are able to run the code:
 ```
-./pbs -m random-32-32-20.map -a random-32-32-20-random-1.scen -o test.csv --outputPaths=paths.txt -k 50 -t 60
+./pbs -m random-32-32-20.map -a random-32-32-20-random-1.scen -k 50 -t 60 --solver GPBS --tr true --ic true --rr true --rth 0 -o test.csv --outputPaths=paths.txt
 ```
 
 - m: the map file from the MAPF benchmark
 - a: the scenario file from the MAPF benchmark
-- o: the output file that contains the search statistics
-- outputPaths: the output file that contains the paths 
 - k: the number of agents
 - t: the runtime limit
--- solver: which solver to use
+- solver: which solver to use (our GPBS already contains partial expansion)
+- tr: whether to use target reasoning (only for GPBS, *default:True*)
+- ic: whether to use induced constraint maximizations (only for GPBS, *default:True*)
+- rr: whether to use soft restart (only for GPBS, *default:True*)
+- rth: the number of backtracking we allow before restart (only valid if `rr` is set true, *default:True*)
+- o: the output file that contains the search statistics
+- outputPaths: the path to store the paths of the solution.
 
 You can find more details and explanations for all parameters with:
 ```

@@ -81,8 +81,8 @@ fig, axs = plt.subplots(nrows=2, ncols=1, figsize=(12,9), dpi=80, facecolor='w',
 SHOW_SIZE = max_size
 axs[0].plot(range(1,SHOW_SIZE+1), iter_data[TARGET_OBJECTIVE][file_names[2]][:SHOW_SIZE],
             label="MAPF-LNS2", color="green", linewidth=LINE_WIDTH)
-axs[0].plot(range(1,SHOW_SIZE+1), iter_data[TARGET_OBJECTIVE][file_names[0]][:SHOW_SIZE],
-            label="GPBS(PE,TR,IC,RR)", color="blue", linewidth=LINE_WIDTH+1)
+# axs[0].plot(range(1,SHOW_SIZE+1), iter_data[TARGET_OBJECTIVE][file_names[0]][:SHOW_SIZE],
+#             label="GPBS(PE,TR,IC,RR)", color="blue", linewidth=LINE_WIDTH+1)
 axs[0].plot(range(1,SHOW_SIZE+1), iter_data[TARGET_OBJECTIVE][file_names[1]][:SHOW_SIZE],
             label="GPBS(PE,TR,IC,SR)", color="red", linewidth=LINE_WIDTH)
 axs[0].axhline(y = 0, color = 'grey', linewidth=0.5)
@@ -95,8 +95,8 @@ axs[0].axhline(y = 0, color = 'grey', linewidth=0.5)
 
 axs[1].plot(range(1,SHOW_SIZE+1), iter_data["acc_ll_calls"][file_names[2]][:SHOW_SIZE],
             label="MAPF-LNS2", color="green", linewidth=LINE_WIDTH)
-axs[1].plot(range(1,SHOW_SIZE+1), iter_data["acc_ll_calls"][file_names[0]][:SHOW_SIZE],
-            label="GPBS(PE,TR,IC,RR)", color="blue", linewidth=LINE_WIDTH+1)
+# axs[1].plot(range(1,SHOW_SIZE+1), iter_data["acc_ll_calls"][file_names[0]][:SHOW_SIZE],
+#             label="GPBS(PE,TR,IC,RR)", color="blue", linewidth=LINE_WIDTH+1)
 axs[1].plot(range(1,SHOW_SIZE+1), iter_data["acc_ll_calls"][file_names[1]][:SHOW_SIZE],
             label="GPBS(PE,TR,IC,SR)", color="red", linewidth=LINE_WIDTH)
 
