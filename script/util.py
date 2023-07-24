@@ -9,6 +9,11 @@ from typing import List
 import pandas as pd
 import numpy as np
 
+
+LARGE_MAPS = ['den520d','warehouse-10-20-10-2-1','warehouse-20-40-10-2-1','warehouse-20-40-10-2-2']
+ANYTIME_SOLVERS = ['LACAMLNS', 'AnytimeCBS']
+
+
 def read_file(in_path:str) -> pd.DataFrame:
     """ Read the csv file with pandas
 
@@ -23,6 +28,7 @@ def read_file(in_path:str) -> pd.DataFrame:
         sys.exit()
     else:
         return pd.read_csv(in_path)
+
 
 def get_file_dir(exp_path:str, map_name:str, solver_name:str) -> str:
     """Get the path to the csv files
@@ -39,6 +45,7 @@ def get_file_dir(exp_path:str, map_name:str, solver_name:str) -> str:
     out_dir = os.path.join(map_dir, solver_name)
     return out_dir
 
+
 def get_file_name(map_name:str, scen:str, ag_num:int, solver_name: str) -> str:
     """Get the name of the csv file (end with .csv)
 
@@ -52,6 +59,7 @@ def get_file_name(map_name:str, scen:str, ag_num:int, solver_name: str) -> str:
     """
     out_name = map_name + '-' + scen + '-' + str(ag_num) + '-' + solver_name + '.csv'
     return out_name
+
 
 def get_csv_instance(exp_path:str, map_name:str, scen:str, ag_num:int, 
                      solver_name:str, solver_dir_name:str=None):
@@ -72,6 +80,7 @@ def get_csv_instance(exp_path:str, map_name:str, scen:str, ag_num:int,
         get_file_dir(exp_path, map_name, solver_dir_name),
         get_file_name(map_name, scen, ag_num, solver_name)))
 
+
 def create_csv_file(exp_path:str, map_name:str, scen:str, ag_num:int, ins_num:int, sol_dir:str,
                     sol_names:List[str], mode:str='min', objective:str='runtime'):
     csv_files = dict()
@@ -81,9 +90,9 @@ def create_csv_file(exp_path:str, map_name:str, scen:str, ag_num:int, ins_num:in
             first_name = _name_
 
     # Sort the csv_files accroding to the objective
-    buffer = dict()
+    buffer = {}
     for col in csv_files[first_name].columns:
-        buffer[col] = list()
+        buffer[col] = []
 
     target_idx = -np.inf
     if mode == 'min':
@@ -94,8 +103,8 @@ def create_csv_file(exp_path:str, map_name:str, scen:str, ag_num:int, ins_num:in
         target_idx = len(sol_names) - 1
 
     for idx in range(ins_num):
-        tmp_rows = dict()
-        tmp_objs = dict()
+        tmp_rows = {}
+        tmp_objs = {}
         for _name_, _file_ in csv_files.items():
             row = _file_.iloc[idx]
             tmp_rows[_name_] = row
@@ -118,3 +127,26 @@ def create_csv_file(exp_path:str, map_name:str, scen:str, ag_num:int, ins_num:in
         solver_type + '_' + mode + '_' + objective + '.csv'
     out_df = pd.DataFrame(buffer)
     out_df.to_csv(path_or_buf=os.path.join(out_dir, out_file_name), index=False)
+
+
+def process_val(raw_value, raw_index:str, solution_cost:int,
+                runtime:float, time_limit:float,
+                solver_name:str, succ_only:bool=False):
+    is_anytime = solver_name in ANYTIME_SOLVERS
+    is_succ = solution_cost >= 0 and (runtime <= time_limit or is_anytime)
+    if raw_index  == 'succ':
+        return int(is_succ)
+
+    if raw_index in ['runtime', 'runtime of initial solution']:
+        return min(raw_value, time_limit)
+
+    if raw_index in ['num_total_conf', 'num_0child']:
+        if raw_value == 0:
+            return np.inf
+        return raw_value
+
+    if succ_only and not is_succ:
+        return np.inf
+
+    assert raw_value >= 0
+    return raw_value

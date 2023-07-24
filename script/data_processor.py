@@ -12,13 +12,12 @@ import matplotlib.pyplot as plt
 import util
 import numpy as np
 
-LARGE_MAPS = ['den520d','warehouse-10-20-10-2-1','warehouse-20-40-10-2-1','warehouse-20-40-10-2-2']
 
 class DataProcessor:
     def __init__(self, in_config) -> None:
-        self.config: Dict = dict()
+        self.config: Dict = {}
         config_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), in_config)
-        with open(config_dir, 'r') as fin:
+        with open(config_dir, encoding='utf-8', mode='r') as fin:
             self.config = yaml.load(fin, Loader=yaml.FullLoader)
 
         # Plot parameters
@@ -38,7 +37,8 @@ class DataProcessor:
                                                   9: (3,3)}
         self.y_labels:Dict[str, str] = {'succ': 'Success rate',
                                         'runtime': 'Runtime (sec)',
-                                        'runtime of detecting conflicts': 'Runtiem of conflict detection (sec)',
+                                        'runtime of detecting conflicts':\
+                                            'Runtiem of conflict detection (sec)',
                                         'runtime of path finding': 'Runtime of path finding (sec)',
                                         'solution cost': 'SOC',
                                         '#low-level generated': 'Number of generated LL Nodes',
@@ -96,11 +96,11 @@ class DataProcessor:
             Dict: the success rate (versus the numbers of agents) of each solver
         """
 
-        result: Dict = dict()
+        result: Dict = {}
         for solver in self.config['solvers']:
-            result[solver['name']] = dict()
+            result[solver['name']] = {}
             for _map_ in self.config['maps']:
-                result[solver['name']][_map_['name']] = {'x': list(), 'val': list(), 'ci': list()}
+                result[solver['name']][_map_['name']] = {'x': [], 'val': [], 'ci': []}
                 global_idx = 1
 
                 for ag_num in _map_['num_of_agents']:
@@ -108,36 +108,11 @@ class DataProcessor:
                         data_frame = util.get_csv_instance(self.config['exp_path'], _map_['name'],
                                                            scen, ag_num, solver['name'])
                         for _, row in data_frame.iterrows():
-                            if in_index  == 'succ':
-                                if row['solution cost'] >= 0 and \
-                                    row['runtime'] <= self.config['time_limit']:
-                                    tmp_val = 1
-                                else:
-                                    tmp_val = 0
+                            _val_ = util.process_val(row[in_index], in_index, row['solution cost'],
+                                                     row['runtime'], self.config['time_limit'],
+                                                     solver['name'], self.config['succ_only'])
 
-                            elif in_index == 'runtime':
-                                tmp_val = min(row[in_index], self.config['time_limit'])
-
-                            elif in_index == 'num_total_conf':
-                                if row['num_total_conf'] == 0:
-                                    tmp_val = np.inf
-                                else:
-                                    tmp_val = row['num_total_conf']
-
-                            elif in_index == 'num_0child':
-                                if row['num_0child'] == 0:
-                                    tmp_val = np.inf
-                                else:
-                                    tmp_val = row['num_0child']
-
-                            elif row[in_index] <= 0 or row['solution cost']==-1 or \
-                                row['runtime'] > self.config['time_limit']:
-                                tmp_val = np.inf
-
-                            else:
-                                tmp_val = row[in_index]
-
-                            result[solver['name']][_map_['name']]['val'].append(tmp_val)
+                            result[solver['name']][_map_['name']]['val'].append(_val_)
                             result[solver['name']][_map_['name']]['x'].append(global_idx)
                             global_idx += 1
         return result
@@ -153,39 +128,30 @@ class DataProcessor:
             Dict: the success rate (versus the numbers of agents) of each solver
         """
 
-        result: Dict = dict()
+        result: Dict = {}
         for solver in self.config['solvers']:
-            result[solver['name']] = dict()
+            result[solver['name']] = {}
             for _map_ in self.config['maps']:
-                result[solver['name']][_map_['name']] = {'x': list(), 'val': list(), 'ci': list()}
+                result[solver['name']][_map_['name']] = {'x': [], 'val': [], 'ci': []}
 
                 for ag_num in _map_['num_of_agents']:
                     total_val = 0.0
                     total_num = 0.0
-                    _data_:List = list()
+                    _data_:List = []
                     for scen in _map_['scens']:
                         tmp_ins_num = 0
                         data_frame = util.get_csv_instance(self.config['exp_path'], _map_['name'],
                                                            scen, ag_num, solver['name'])
                         for _, row in data_frame.iterrows():
                             tmp_ins_num += 1
-                            if in_index == 'succ':
-                                if row['solution cost'] >= 0 and \
-                                    row['runtime'] <= self.config['time_limit']:
-                                    total_val += 1
-                            elif in_index == 'runtime':
-                                _data_.append(min(row[in_index], self.config['time_limit']))
-                                total_val += min(row[in_index], self.config['time_limit'])
-                            elif in_index == '#high-level generated':
-                                assert row[in_index] > 0
-                                if row[in_index] == 1 and '#pathfinding' in row.index:
-                                    assert row['#pathfinding'] == 0
-                                _data_.append(row[in_index]-1)
-                                total_val += row[in_index]-1
-                            else:
-                                assert row[in_index] >= 0
-                                _data_.append(row[in_index])
-                                total_val += row[in_index]
+                            raw_data = None
+                            if in_index != 'succ':
+                                raw_data = row[in_index]
+                            _val_ = util.process_val(raw_data, in_index, row['solution cost'],
+                                                    row['runtime'], self.config['time_limit'],
+                                                    solver['name'], False)
+                            total_val += _val_
+                            _data_.append(_val_)
 
                         total_num += self.config['ins_num']
                         if tmp_ins_num != self.config['ins_num']:
@@ -223,18 +189,18 @@ class DataProcessor:
             Dict: the success rate (versus the numbers of agents) of each solver
         """
 
-        result: Dict = dict()
+        result: Dict = {}
         for solver in self.config['solvers']:
-            result[solver['name']] = dict()
+            result[solver['name']] = {}
             for _map_ in self.config['maps']:
-                result[solver['name']][_map_['name']] = {'x': list(), 'val': list(), 'ci': list()}
+                result[solver['name']][_map_['name']] = {'x': [], 'val': [], 'ci': []}
                 default_w = solver['w']
 
                 for tmp_fw in self.config['f_weights']:
                     solver['w'] = tmp_fw
                     total_val = 0.0
                     total_num = 0.0
-                    _data_:List = list()
+                    _data_:List = []
 
                     for ag_num in _map_['num_of_agents']:
                         for scen in _map_['scens']:
@@ -279,6 +245,13 @@ class DataProcessor:
         right_bd = self.config['set_shift']
         plt_rng = (right_bd - left_bd) / len(self.config['solvers'])
         _num_ = range(1, len(_x_)+1)
+
+        # Plot the lower bound
+
+
+
+
+
 
         for s_idx, solver in enumerate(self.config['solvers']):
             mf_color = 'white'
@@ -395,7 +368,7 @@ class DataProcessor:
             y_index =='#restarts' or y_index == 'solution cost':
             label_scale = 1000
 
-            if in_map['name'] in LARGE_MAPS:
+            if in_map['name'] in util.LARGE_MAPS:
                 tmp_range = 80
             else:
                 tmp_range = 20
@@ -489,9 +462,9 @@ class DataProcessor:
 
     def get_avg_vals(self, y_index='succ'):
         results = self.get_ins_val(y_index)
-        output = dict()
+        output = {}
         for solver in self.config['solvers']:
-            output[solver['name']] = dict()
+            output[solver['name']] = {}
             for _map_ in self.config['maps']:
                 total_val = 0
                 total_ins = 0
@@ -504,9 +477,9 @@ class DataProcessor:
 
     def get_avg_vals_all(self, y_index='succ'):
         results = self.get_ins_val(y_index)
-        output = dict()
+        output = {}
         for solver in self.config['solvers']:
-            output[solver['name']] = dict()
+            output[solver['name']] = {}
             total_val = 0
             total_ins = 0
             for _map_ in self.config['maps']:
@@ -689,11 +662,11 @@ class DataProcessor:
         val2 = self.get_val(x_index, y_index2, False)
         x_list = val1[self.config['solvers'][0]['name']][self.config['maps'][0]['name']]['x']
 
-        result = dict()
+        result = {}
         for _solver_ in self.config['solvers']:
-            result[_solver_['name']] = dict()
+            result[_solver_['name']] = {}
             for _map_ in self.config['maps']:
-                result[_solver_['name']][_map_['name']] = {'x': list(), 'val': list(), 'ci': list()}
+                result[_solver_['name']][_map_['name']] = {'x': [], 'val': [], 'ci': []}
                 for idx, _x_ in enumerate(x_list):
                     tmp_val1 = val1[_solver_['name']][_map_['name']]['val'][idx]
                     tmp_val2 = val2[_solver_['name']][_map_['name']]['val'][idx]
@@ -747,7 +720,7 @@ class DataProcessor:
 
     # def plot_hist_fig(self, x_index:str='num', y_index:List[str]=['num_ex_conf', 'num_in_conf']):
     #     # Get the result from the experiments
-    #     results_list = list()
+    #     results_list = []
     #     for y_idx in y_index:
     #         result = self.get_val(x_index, y_idx)
     #         results_list.append(result)
@@ -811,15 +784,14 @@ if __name__ == '__main__':
 
     # data_processor.plot_fig(x_index='num', y_index='succ')
     # data_processor.plot_fig(x_index='num', y_index='runtime')
-    # data_processor.plot_fig(x_index='num', y_index='runtime of path finding')
-    # data_processor.plot_fig(x_index='num', y_index='#low-level search calls')
+    data_processor.plot_fig(x_index='num', y_index='#low-level search calls')
     # data_processor.plot_fig(x_index='num', y_index='#low-level expanded')
     # data_processor.plot_fig(x_index='num', y_index='#high-level expanded')
     # data_processor.plot_fig(x_index='num', y_index='#restarts')
     # data_processor.plot_fig(x_index='num', y_index='#backtrack')
     # data_processor.plot_fig(x_index='num', y_index='#pathfinding')
 
-    data_processor.plot_fig(x_index='ins', y_index='solution cost')
+    # data_processor.plot_fig(x_index='ins', y_index='solution cost')
     # data_processor.plot_fig(x_index='ins', y_index='#high-level generated')
     # data_processor.plot_fig(x_index='ins', y_index='#low-level expanded')
     # data_processor.plot_fig(x_index='ins', y_index='#backtrack')

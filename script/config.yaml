@@ -2,6 +2,7 @@ exp_path: "/home/rdaneel/PBS_results_SOCS2023/trial1/"
 ins_num: 25
 time_limit: 60
 time_gap: 15
+succ_only: false
 
 figure_width: 10
 figure_height: 10
