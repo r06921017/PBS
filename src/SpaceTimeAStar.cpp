@@ -562,6 +562,7 @@ Path SpaceTimeAStar::findPath(const ConstraintTable& constraint_table)
     return path;
 }
 
+
 inline AStarNode* SpaceTimeAStar::popNode()
 {
     AStarNode* node;
@@ -599,7 +600,7 @@ void SpaceTimeAStar::updateFocalList()
         int new_min_f_val = open_head->getFVal();
         for (auto n : open_list)
         {
-            if (open_head->getFVal() > w * min_f_val && open_head->getFVal() <= w * new_min_f_val)
+            if (n->getFVal() > w * min_f_val && n->getFVal() <= w * new_min_f_val)
                 n->focal_handle = focal_list.push(n);
         }
         min_f_val = new_min_f_val;
