@@ -36,7 +36,7 @@ make
 
 Then, you are able to run the code:
 ```shell script
-./pbs -m random-32-32-20.map -a random-32-32-20-random-1.scen -k 400 -t 60 -o test.csv --outputPaths paths.txt --solver GPBS --tr true --ic true --rr true --rth 0
+./pbs -m random-32-32-20.map -a random-32-32-20-random-1.scen -k 400 -t 60 -o test.csv --outputPaths paths.txt --outputConf conflict.txt --solver GPBS --tr true --ic true --rr true --rth 0
 ```
 
 - m: the map file from the MAPF benchmark

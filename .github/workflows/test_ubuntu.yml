@@ -37,4 +37,4 @@ jobs:
       working-directory: ${{github.workspace}}/build
       # Execute tests defined by the CMake configuration.
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ./pbs -m ${{github.workspace}}/random-32-32-20.map -a ${{github.workspace}}/random-32-32-20-random-1.scen -k 400 -t 60 -o test.csv --outputPaths paths.txt --solver GPBS --tr true --ic true --rr true --rth 0
+      run: ./pbs -m ${{github.workspace}}/random-32-32-20.map -a ${{github.workspace}}/random-32-32-20-random-1.scen -k 400 -t 60 -o test.csv --outputPaths paths.txt --outputConf conflict.txt --solver GPBS --tr true --ic true --rr true --rth 0

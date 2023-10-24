@@ -7,9 +7,9 @@
 #include "SpaceTimeAStar.h"
 
 GPBS::GPBS(const Instance& instance, int screen, bool sipp, bool is_ll_opt, bool use_tr,
-    bool use_ic, bool use_rr, uint64_t rr_th, double ic_ratio, bool use_LH, bool use_SH): 
+    bool use_ic, bool use_rr, uint64_t rr_th, bool use_LH, bool use_SH): 
     PBS(instance, screen, sipp, is_ll_opt, use_LH, use_SH, use_rr, rr_th), 
-    use_tr(use_tr), use_ic(use_ic), ic_ratio(ic_ratio) {}
+    use_tr(use_tr), use_ic(use_ic) {}
 
 bool GPBS::solve(clock_t time_limit)
 {
@@ -666,8 +666,6 @@ void GPBS::computeImplicitConstraints(PBSNode* node, list<shared_ptr<Conflict>> 
             }
         }
         node->num_IC->at(conf->a2).at(conf->a1) = num_ic_a2_a1;
-        // double val_a1_a2 = ic_ratio * (double)num_ic_a2_a1 + 
-        //     (1.0-ic_ratio) / (double)(lower_pri_agents[conf->a2].size()+1);
 
         // Compute the additional implicit constraints for priority a1 <- a2
         if (higher_pri_agents[conf->a2].empty())
@@ -699,26 +697,18 @@ void GPBS::computeImplicitConstraints(PBSNode* node, list<shared_ptr<Conflict>> 
             }
         }
         node->num_IC->at(conf->a1).at(conf->a2) = num_ic_a1_a2;
-        // double val_a2_a1 = ic_ratio * (double)num_ic_a2_a1 +
-        //     (1.0-ic_ratio) / (double)(lower_pri_agents[conf->a1].size()+1);
 
         // Assign the maximum to the current conflict
         if (num_ic_a2_a1 > num_ic_a1_a2)
         {
             conf->num_ic = num_ic_a2_a1;
             conf->ll_calls = lower_pri_agents[conf->a2].size()+1;
-            // conf->ll_calls = paths[conf->a2]->size();
-            // for (const int& _la_ : lower_pri_agents[conf->a2])
-            //     conf->ll_calls += paths[_la_]->size();
             std::swap(conf->a1, conf->a2);
         }
         else
         {
             conf->num_ic = num_ic_a1_a2;
             conf->ll_calls = lower_pri_agents[conf->a1].size()+1;
-            // conf->ll_calls = paths[conf->a1]->size();
-            // for (const int& _la_ : lower_pri_agents[conf->a1])
-            //     conf->ll_calls += paths[_la_]->size();
         }
     }
     runtime_implicit_constraints += getDuration(t, steady_clock::now());

@@ -86,7 +86,7 @@ int main(int argc, char** argv)
 	{
 		GPBS gpbs(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>(), vm["opt"].as<bool>(),
 			vm["tr"].as<bool>(), vm["ic"].as<bool>(), vm["rr"].as<bool>(), vm["rth"].as<uint64_t>(),
-			vm["alpha"].as<double>(), vm["lh"].as<bool>(), vm["sh"].as<bool>());
+			vm["lh"].as<bool>(), vm["sh"].as<bool>());
 		// run
 		gpbs.solve(vm["cutoffTime"].as<clock_t>());
 		if (vm.count("output"))
