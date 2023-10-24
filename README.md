@@ -35,8 +35,8 @@ make
 ```
 
 Then, you are able to run the code:
-```
-./pbs -m random-32-32-20.map -a random-32-32-20-random-1.scen -k 50 -t 60 --solver GPBS --tr true --ic true --rr true --rth 0 -o test.csv --outputPaths=paths.txt
+```shell script
+./pbs -m random-32-32-20.map -a random-32-32-20-random-1.scen -k 400 -t 60 -o test.csv --outputPaths paths.txt --solver GPBS --tr true --ic true --rr true --rth 0
 ```
 
 - m: the map file from the MAPF benchmark
@@ -52,7 +52,7 @@ Then, you are able to run the code:
 - outputPaths: the path to store the paths of the solution.
 
 You can find more details and explanations for all parameters with:
-```
+```shell script
 ./pbs --help
 ```
 
@@ -75,4 +75,4 @@ In Proceedings of the AAAI Conference on Artificial Intelligence (AAAI), pp. 764
 
 [3] Jiaoyang Li, Zhe Chen, Daniel Harabor, Peter J. Stuckey and Sven Koenig.
 MAPF-LNS2: Fast Repairing for Multi-Agent Path Finding via Large Neighborhood Search
-In Proceedings of the AAAI Conference on Artificial Intelligence, pp. 10256-10265, 2022.
+In Proceedings of the AAAI Conference on Artificial Intelligence (AAAI), pp. 10256-10265, 2022.
