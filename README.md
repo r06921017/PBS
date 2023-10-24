@@ -1,4 +1,6 @@
 # Greedy Priority-Based Search (GPBS)
+[![test_ubuntu](https://github.com/shchan13/PBS/actions/workflows/test_ubuntu.yml/badge.svg)](https://github.com/shchan13/PBS/actions/workflows/test_ubuntu.yml)
+
 This repo is the implementation of our [paper](https://ojs.aaai.org/index.php/SOCS/article/view/27278) at SOCS 2023 [1].
 The empirical results show that GPBS outperforms than SOTA in terms of success rates within 60 seconds with good-quality solutions.
 
