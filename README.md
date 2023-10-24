@@ -1,14 +1,14 @@
-# Greedy PBS
-A suboptimal solver for Multi-Agent Path Finding (MAPF)
+# Greedy Priority-Based Search (GPBS)
+This repo is the implementation of our [paper](https://ojs.aaai.org/index.php/SOCS/article/view/27278) at SOCS 2023 [1].
+The empirical results show that GPBS outperforms than SOTA in terms of success rates within 60 seconds with good-quality solutions.
 
-Priority-Based Search (PBS) is an efficient suboptimal algorithm for solving Multi-Agent Path Finding (MAPF).
-More details can be found in our paper at AAAI 2019 [1]. 
-(This implementation is not the original code for producing the results in the paper.)
+![succ](images/succ_sota.png)
 
-The implementation provides a SIPP option that uses SIPPS [2] (instead of state-time A*) 
-on the low level of PBS to plan paths for agents.
+![soc](images/soc_sota.png)
 
-On top of that, we propose Greedy PBS (GPBS) with other improved techniques that aims to minimize the number of collisions during the search. We also implement four enhancements to speed up the search: Partial Expansion (PE), Target Reasoning (TR), Induced Constraints (IC), and Soft Restart (SR).
+Priority-Based Search (PBS) [2] is an efficient suboptimal algorithm for solving Multi-Agent Path Finding (MAPF).
+On top of that, we propose **Greedy PBS (GPBS)** with other improved techniques that aims to minimize the number of collisions during the search. We also implement four enhancements to speed up the search: Partial Expansion (PE), Target Reasoning (TR), Induced Constraints (IC), and Soft Restart (SR).
+This repo also provides a SIPP option that uses SIPPS [3] (instead of space-time A*) on the low level to plan paths for agents.
 
 ## Usage
 The code requires the external library [boost](https://www.boost.org/).
@@ -65,10 +65,14 @@ For a given number of agents k, the first k rows of the scen file are used to ge
 GPBS is released under USC – Research License. See license.md for further details.
  
 ## References
-[1] Hang Ma, Daniel Harabor, Peter J. Stuckey, Jiaoyahng Li and S. Koenig. 
-Searching with Consistent Prioritization for Multi-Agent Path Finding. 
-In Proceedings of the AAAI Conference on Artificial Intelligence (AAAI), 7643-7650, 2019.
+[1] **Shao-Hung Chan**, Roni Stern, Ariel Felner, and Sven Koenig.
+Greedy Priority-Based Search for Suboptimal Multi-Agent Path Finding.
+In Proceedings of the International Symposium on Combinatorial Search (SOCS), pp. 11-19, 2023.
 
-[2] Jiaoyang Li, Zhe Chen, Daniel Harabor, Peter J. Stuckey and Sven Koenig.
+[2] Hang Ma, Daniel Harabor, Peter J. Stuckey, Jiaoyang Li and Sven Koenig. 
+Searching with Consistent Prioritization for Multi-Agent Path Finding. 
+In Proceedings of the AAAI Conference on Artificial Intelligence (AAAI), pp. 7643-7650, 2019.
+
+[3] Jiaoyang Li, Zhe Chen, Daniel Harabor, Peter J. Stuckey and Sven Koenig.
 MAPF-LNS2: Fast Repairing for Multi-Agent Path Finding via Large Neighborhood Search
-In Proceedings of the AAAI Conference on Artificial Intelligence, (in print), 2022.
+In Proceedings of the AAAI Conference on Artificial Intelligence, pp. 10256-10265, 2022.

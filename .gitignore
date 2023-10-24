@@ -2,7 +2,6 @@ cmake*
 .idea
 *.csv
 *.txt
-*.png
 .vscode
 build
 hpc*
