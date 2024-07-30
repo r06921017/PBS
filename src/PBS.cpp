@@ -622,6 +622,24 @@ void PBS::savePaths(const string &fileName) const
     output.close();
 }
 
+void PBS::saveSimplePaths(const string &fileName) const
+{
+    std::ofstream output;
+    output.open(fileName, std::ios::out);
+    for (int i = 0; i < num_of_agents; i++)
+    {
+        output << i << ",";
+        for (size_t t=0; t < paths[i]->size(); t++)
+        {
+            output << paths[i]->at(t).location;
+            if (t < paths[i]->size()-1)
+                output << ",";
+        }
+        output << endl;
+    }
+    output.close();
+}
+
 void PBS::saveConflicts(const string &fileName) const
 {
     std::ofstream output;

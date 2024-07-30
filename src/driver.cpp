@@ -87,16 +87,31 @@ int main(int argc, char** argv)
 		GPBS gpbs(instance, vm["screen"].as<int>(), vm["sipp"].as<bool>(), vm["opt"].as<bool>(),
 			vm["tr"].as<bool>(), vm["ic"].as<bool>(), vm["rr"].as<bool>(), vm["rth"].as<uint64_t>(),
 			vm["lh"].as<bool>(), vm["sh"].as<bool>());
+
 		// run
 		gpbs.solve(vm["cutoffTime"].as<clock_t>());
+
 		if (vm.count("output"))
+		{
 			gpbs.saveResults(vm["output"].as<string>(), vm["agents"].as<string>());
+		}
+
 		if (vm.count("outputPaths"))
-			gpbs.savePaths(vm["outputPaths"].as<string>());
+		{
+			// gpbs.savePaths(vm["outputPaths"].as<string>());
+			gpbs.saveSimplePaths(vm["outputPaths"].as<string>());
+		}
+
 		if (vm.count("outputConf"))
+		{
 			gpbs.saveConflicts(vm["outputConf"].as<string>());
+		}
+
 		if (vm.count("outputPT"))
+		{
 			gpbs.saveCT(vm["outputPT"].as<string>());
+		}
+
 		gpbs.clearSearchEngines();
 	}
 	// else if (vm["solver"].as<string>() == "PVCS")
